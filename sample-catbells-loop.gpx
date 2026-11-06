@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="MemoryMap Web" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Catbells Lakeland Ridge Loop</name>
+    <desc>Sample GPX track in the English Lake District for testing MemoryMap Web</desc>
+  </metadata>
+  <trk>
+    <name>Catbells Lakeland Ridge Loop</name>
+    <trkseg>
+      <trkpt lat="54.579400" lon="-3.164500">
+        <ele>142.0</ele>
+        <name>WP 1 - Hawes End Start</name>
+      </trkpt>
+      <trkpt lat="54.574200" lon="-3.168200">
+        <ele>285.0</ele>
+        <name>WP 2 - Skelgill Bank</name>
+      </trkpt>
+      <trkpt lat="54.568300" lon="-3.170800">
+        <ele>451.0</ele>
+        <name>WP 3 - Catbells Summit</name>
+      </trkpt>
+      <trkpt lat="54.562500" lon="-3.172600">
+        <ele>412.0</ele>
+        <name>WP 4 - Hause Gate</name>
+      </trkpt>
+      <trkpt lat="54.560800" lon="-3.163100">
+        <ele>290.0</ele>
+        <name>WP 5 - Manesty Park</name>
+      </trkpt>
+      <trkpt lat="54.567500" lon="-3.156500">
+        <ele>165.0</ele>
+        <name>WP 6 - Derwentwater Terrace</name>
+      </trkpt>
+      <trkpt lat="54.575100" lon="-3.158800">
+        <ele>118.0</ele>
+        <name>WP 7 - Woodland Return</name>
+      </trkpt>
+      <trkpt lat="54.579400" lon="-3.164500">
+        <ele>142.0</ele>
+        <name>WP 8 - Hawes End Finish</name>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
