@@ -206,6 +206,7 @@
     pointInspector: document.getElementById('point-inspector'),
     btnClearInspector: document.getElementById('btn-clear-inspector'),
     cursorCoords: document.getElementById('cursor-coords'),
+    copyCursorCoordsBtn: document.getElementById('copy-cursor-coords-btn'),
     mapEl: document.getElementById('map'),
     // Save Modal
     saveModal: document.getElementById('save-modal'),
@@ -226,6 +227,52 @@
   });
 
   // ==================== GEOMETRY & HAVERSINE HELPERS ====================
+  function formatLatLon5(lat, lng) {
+    return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+  }
+
+  async function copyCoordinatesToClipboard(lat, lng, btnEl) {
+    const formatted = formatLatLon5(lat, lng);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(formatted);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = formatted;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      if (btnEl) {
+        const origHtml = btnEl.dataset.origHtml || btnEl.innerHTML;
+        btnEl.dataset.origHtml = origHtml;
+        btnEl.textContent = 'Copied!';
+        btnEl.classList.add('copied');
+        setTimeout(() => {
+          btnEl.innerHTML = origHtml;
+          btnEl.classList.remove('copied');
+        }, 1400);
+      }
+    } catch (err) {
+      console.warn('Clipboard copy failed:', err);
+    }
+  }
+
+  // Global delegated click listener for any .copy-coords-btn with data-lat & data-lng
+  document.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.copy-coords-btn[data-lat][data-lng]');
+    if (!copyBtn) return;
+    e.stopPropagation();
+    const lat = parseFloat(copyBtn.dataset.lat);
+    const lng = parseFloat(copyBtn.dataset.lng);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      copyCoordinatesToClipboard(lat, lng, copyBtn);
+    }
+  });
+
   function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Earth radius in meters
     const toRad = (deg) => (deg * Math.PI) / 180;
@@ -535,13 +582,17 @@
    * Opens popup when clicking on a line segment between two waypoints (Edit requirement #5)
    */
   function openSegmentInsertPopup(track, segIndex, clickLatLng) {
+    const formattedCoords = formatLatLon5(clickLatLng.lat, clickLatLng.lng);
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="popup-title">
         <span>Track Segment (#${segIndex + 1} &rarr; #${segIndex + 2})</span>
       </div>
       <div class="popup-coords">
-        Lat: ${clickLatLng.lat.toFixed(5)}, Lon: ${clickLatLng.lng.toFixed(5)}
+        <div class="coords-row">
+          <span>${formattedCoords}</span>
+          <button type="button" class="copy-coords-btn" data-lat="${clickLatLng.lat}" data-lng="${clickLatLng.lng}" title="Copy coordinates">Copy</button>
+        </div>
       </div>
       <div class="popup-detail">
         Editing <strong>${escapeHtml(track.name)}</strong>
@@ -593,6 +644,7 @@
     else if (isLast) badgeRole = 'End Waypoint (Last)';
 
     const elevStr = typeof wp.ele === 'number' ? `${wp.ele} m` : 'Fetching...';
+    const formattedCoords = formatLatLon5(wp.lat, wp.lng);
 
     const container = document.createElement('div');
     container.innerHTML = `
@@ -600,8 +652,11 @@
         <span>Waypoint #${index + 1} of ${total}</span>
       </div>
       <div class="popup-coords">
-        Lat: ${wp.lat.toFixed(5)}, Lon: ${wp.lng.toFixed(5)}<br/>
-        Elevation: ${elevStr}
+        <div class="coords-row">
+          <span>${formattedCoords}</span>
+          <button type="button" class="copy-coords-btn" data-lat="${wp.lat}" data-lng="${wp.lng}" title="Copy coordinates">Copy</button>
+        </div>
+        <div style="margin-top:3px;">Elevation: ${elevStr}</div>
       </div>
       <div class="popup-detail">
         ${badgeRole} &bull; <em>Drag marker to move</em>
@@ -811,7 +866,10 @@
 
   // ==================== MAP INTERACTION EVENTS ====================
   map.on('mousemove', (e) => {
-    el.cursorCoords.textContent = `Lat: ${e.latlng.lat.toFixed(5)} , Lon: ${e.latlng.lng.toFixed(5)}`;
+    el.cursorCoords.textContent = formatLatLon5(e.latlng.lat, e.latlng.lng);
+    el.copyCursorCoordsBtn.dataset.lat = e.latlng.lat;
+    el.copyCursorCoordsBtn.dataset.lng = e.latlng.lng;
+    el.copyCursorCoordsBtn.classList.remove('hidden');
     if (state.mode === 'creating' || state.mode === 'extending_after' || state.mode === 'extending_before') {
       updatePreviewLine(e.latlng);
     }
@@ -891,11 +949,15 @@
       fillOpacity: 0.9
     }).addTo(map);
 
+    const formattedCoords = formatLatLon5(lat, lng);
+
     const initialHtml = `
       <div class="popup-title">Point Information</div>
       <div class="popup-coords">
-        Lat: ${lat.toFixed(6)}<br/>
-        Lon: ${lng.toFixed(6)}
+        <div class="coords-row">
+          <span>${formattedCoords}</span>
+          <button type="button" class="copy-coords-btn" data-lat="${lat}" data-lng="${lng}" title="Copy coordinates">Copy</button>
+        </div>
       </div>
       <div class="popup-detail">Fetching elevation &amp; place details...</div>
     `;
@@ -904,10 +966,11 @@
 
     el.pointInspector.innerHTML = `
       <div class="inspector-grid">
-        <span class="inspector-key">Latitude:</span>
-        <span class="inspector-val">${lat.toFixed(6)}&deg;</span>
-        <span class="inspector-key">Longitude:</span>
-        <span class="inspector-val">${lng.toFixed(6)}&deg;</span>
+        <span class="inspector-key">Lat, Lon:</span>
+        <span class="inspector-val coords-row">
+          <span>${formattedCoords}</span>
+          <button type="button" class="copy-coords-btn" data-lat="${lat}" data-lng="${lng}" title="Copy coordinates">Copy</button>
+        </span>
         <span class="inspector-key">Elevation:</span>
         <span class="inspector-val" id="insp-elev">Loading...</span>
       </div>
@@ -943,9 +1006,11 @@
           <span>${escapeHtml(placeData?.name || 'Clicked Point')}</span>
         </div>
         <div class="popup-coords">
-          Lat: ${lat.toFixed(6)}<br/>
-          Lon: ${lng.toFixed(6)}<br/>
-          Elev: ${elevText}
+          <div class="coords-row">
+            <span>${formattedCoords}</span>
+            <button type="button" class="copy-coords-btn" data-lat="${lat}" data-lng="${lng}" title="Copy coordinates">Copy</button>
+          </div>
+          <div style="margin-top:3px;">Elev: ${elevText}</div>
         </div>
         <div class="popup-detail">${escapeHtml(placeName)}</div>
         <div class="popup-actions">

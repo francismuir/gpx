@@ -800,14 +800,52 @@ kbd {
   bottom: 8px;
   left: 10px;
   z-index: 800;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--text-main);
-  padding: 4px 9px;
+  padding: 4px 8px;
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 0.73rem;
-  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-coords-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.copy-coords-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.copy-coords-btn.copied {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: var(--primary);
+  color: #6ee7b7;
+}
+
+.coords-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 /* ==================== LEAFLET POPUP & MARKER CUSTOMIZATION ==================== */
