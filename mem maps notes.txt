@@ -1,0 +1,35 @@
+I use a program called memory-maps on my Windows P.C. I want to create some of the functionality in a web based application that will run on my desktop and mobile browser. This is what I want to do.
+
+Load Open Street maps in to a window with the following functionality:
+
+1. Display the OSM layers such as the cycle map layer. Layers can be switched on or off.
+2. Drag and zoom the map as required.
+3. Search for places and points of interest.
+4. Click on any point and get information about that point including the latitude and logitude.
+
+I want to create GPX tracks that I can export to a navigation device.
+
+Creating a new GPX track:
+1. Click a button to create a new track.
+2. Click anywhere on the map to add a waypoint to that track.
+3. Each subsequent click will add that point to the track and display a semi transparent line between the two points.
+4. Display the total distance and elevation gain / loss as I build the track.
+5. Pressing escape on the keyboard will end the track creation.
+6. Clicking anywhere on the track will enter edit mode (see below).
+7. Click a button to save the track in the GPX format.
+
+Load an existing track:
+1. Click a button to load an existing GPX track from the filesystem.
+2. Display the track on the map.
+3. Display information about that GPX file such as distance and elevation gain / loss.
+4. Move the map view to show the whole track.
+
+Edit a track:
+1. Click on any track displayed to start editing.
+2. When the user clicks a waypoint they have the option to delete that waypoint.
+4. Click and drag a waypoint to move that waypoint to a new location.
+5. Click anywhere on the line between the waypoints gives the option to add a new waypoint in between two existing waypoints.
+6. Clicking on the last waypoint gives the option to add a waypoint after.
+7. Clicking on the first waypoint gives the option to add a waypoint before.
+8. Information such as distance and elevation gain / loss are updated automatically.
+9. Click on the save button gives the option to save with the same name or use a new name and save the file in the GPX format.

@@ -4,7 +4,9 @@
   --bg-card: #283548;
   --bg-hover: #334155;
   --border-color: #334155;
+  --border-subtle: rgba(255, 255, 255, 0.06);
   --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --primary: #10b981;
   --primary-hover: #059669;
@@ -13,10 +15,63 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --danger-hover: #dc2626;
+  --stat-gain: #34d399;
+  --stat-loss: #f87171;
+  --bg-mode-idle: rgba(15, 23, 42, 0.55);
+  --bg-floating: rgba(15, 23, 42, 0.92);
+  --bg-canvas: rgba(255, 255, 255, 0.02);
+  --bg-backdrop: rgba(2, 6, 23, 0.72);
+  --popup-coords-text: #93c5fd;
+  --popup-coords-bg: rgba(15, 23, 42, 0.6);
+  --copy-btn-text: #93c5fd;
+  --copy-btn-copied-text: #6ee7b7;
+  --danger-soft-text: #fca5a5;
+  --save-summary-text: #a7f3d0;
+  --btn-light-bg: rgba(255, 255, 255, 0.15);
+  --btn-light-hover: rgba(255, 255, 255, 0.25);
+  --btn-light-text: #ffffff;
+  --btn-light-border: rgba(255, 255, 255, 0.25);
+  --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.45);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --topbar-height: 58px;
   --sidebar-width: 350px;
+}
+
+[data-theme="light"] {
+  --bg-dark: #f1f5f9;
+  --bg-panel: #ffffff;
+  --bg-card: #e2e8f0;
+  --bg-hover: #e2e8f0;
+  --border-color: #cbd5e1;
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --stat-gain: #059669;
+  --stat-loss: #dc2626;
+  --bg-mode-idle: #f8fafc;
+  --bg-floating: rgba(255, 255, 255, 0.94);
+  --bg-canvas: rgba(15, 23, 42, 0.03);
+  --bg-backdrop: rgba(15, 23, 42, 0.45);
+  --popup-coords-text: #1d4ed8;
+  --popup-coords-bg: #f1f5f9;
+  --copy-btn-text: #1d4ed8;
+  --copy-btn-copied-text: #047857;
+  --danger-soft-text: #dc2626;
+  --save-summary-text: #065f46;
+  --btn-light-bg: rgba(15, 23, 42, 0.07);
+  --btn-light-hover: rgba(15, 23, 42, 0.14);
+  --btn-light-text: #0f172a;
+  --btn-light-border: rgba(15, 23, 42, 0.2);
+  --shadow-popup: 0 10px 25px rgba(15, 23, 42, 0.15);
 }
 
 * {
@@ -25,7 +80,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -166,7 +222,7 @@ html, body {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-popup);
   list-style: none;
   max-height: 320px;
   overflow-y: auto;
@@ -175,7 +231,7 @@ html, body {
 
 .search-results li {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -248,8 +304,15 @@ html, body {
 }
 
 @keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
-  50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0);
+  }
 }
 
 .btn-secondary {
@@ -281,13 +344,13 @@ html, body {
 }
 
 .btn-light {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: var(--btn-light-bg);
+  color: var(--btn-light-text);
+  border: 1px solid var(--btn-light-border);
 }
 
 .btn-light:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--btn-light-hover);
 }
 
 .btn-sm {
@@ -359,7 +422,7 @@ html, body {
 }
 
 .mode-banner.mode-idle {
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--bg-mode-idle);
 }
 
 .mode-banner.mode-creating {
@@ -471,7 +534,7 @@ html, body {
   gap: 8px;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .track-name-label {
@@ -491,7 +554,7 @@ html, body {
 
 .stat-card {
   background: var(--bg-panel);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: 7px;
   padding: 8px 10px;
   display: flex;
@@ -518,11 +581,11 @@ html, body {
 }
 
 .stat-value.gain {
-  color: #34d399;
+  color: var(--stat-gain);
 }
 
 .stat-value.loss {
-  color: #f87171;
+  color: var(--stat-loss);
 }
 
 .stat-sep {
@@ -546,7 +609,7 @@ html, body {
 .elev-profile-wrap {
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .elev-profile-header {
@@ -562,7 +625,7 @@ html, body {
   height: 68px;
   display: block;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-canvas);
   cursor: crosshair;
 }
 
@@ -647,7 +710,7 @@ html, body {
 
 .track-action-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-hover);
 }
 
 .track-action-btn.delete:hover {
@@ -680,7 +743,7 @@ html, body {
 }
 
 .layer-option:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .layer-option input {
@@ -718,13 +781,14 @@ html, body {
 
 .inspector-address {
   font-size: 0.77rem;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   line-height: 1.35;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-subtle);
 }
 
-.empty-state, .empty-state-sm {
+.empty-state,
+.empty-state-sm {
   color: var(--text-muted);
   font-size: 0.78rem;
   line-height: 1.45;
@@ -780,7 +844,7 @@ kbd {
   left: 50%;
   transform: translateX(-50%);
   z-index: 800;
-  background: rgba(15, 23, 42, 0.92);
+  background: var(--bg-floating);
   backdrop-filter: blur(6px);
   border: 1px solid var(--primary);
   color: var(--text-main);
@@ -791,7 +855,7 @@ kbd {
   gap: 10px;
   font-size: 0.82rem;
   font-weight: 500;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-popup);
 }
 
 /* Floating Coordinate Readout */
@@ -800,8 +864,8 @@ kbd {
   bottom: 8px;
   left: 10px;
   z-index: 800;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--bg-floating);
+  border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 4px 8px;
   border-radius: 6px;
@@ -818,7 +882,7 @@ kbd {
   gap: 4px;
   background: rgba(59, 130, 246, 0.18);
   border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
+  color: var(--copy-btn-text);
   border-radius: 4px;
   padding: 2px 7px;
   font-family: var(--font-sans);
@@ -838,7 +902,7 @@ kbd {
 .copy-coords-btn.copied {
   background: rgba(16, 185, 129, 0.25);
   border-color: var(--primary);
-  color: #6ee7b7;
+  color: var(--copy-btn-copied-text);
 }
 
 .coords-row {
@@ -854,7 +918,7 @@ kbd {
   color: var(--text-main) !important;
   border: 1px solid var(--border-color);
   border-radius: 10px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: var(--shadow-popup) !important;
   padding: 2px !important;
 }
 
@@ -883,8 +947,8 @@ kbd {
 .popup-coords {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: #93c5fd;
-  background: rgba(15, 23, 42, 0.6);
+  color: var(--popup-coords-text);
+  background: var(--popup-coords-bg);
   padding: 4px 7px;
   border-radius: 5px;
   margin-bottom: 6px;
@@ -892,7 +956,7 @@ kbd {
 
 .popup-detail {
   font-size: 0.77rem;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
@@ -947,7 +1011,7 @@ kbd {
 
 .popup-btn.danger {
   background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+  color: var(--danger-soft-text);
   border-color: rgba(239, 68, 68, 0.35);
 }
 
@@ -988,7 +1052,7 @@ kbd {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.72);
+  background: var(--bg-backdrop);
   backdrop-filter: blur(4px);
   z-index: 3000;
   display: flex;
@@ -1003,7 +1067,7 @@ kbd {
   border-radius: 12px;
   width: 100%;
   max-width: 440px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-popup);
   overflow: hidden;
 }
 
@@ -1085,7 +1149,7 @@ kbd {
 .save-summary-strip {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  color: #a7f3d0;
+  color: var(--save-summary-text);
   padding: 8px 12px;
   border-radius: 7px;
   font-size: 0.78rem;
@@ -1095,7 +1159,7 @@ kbd {
 
 .modal-footer {
   padding: 12px 16px;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-dark);
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;

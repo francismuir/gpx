@@ -181,6 +181,10 @@
     btnLoadGpx: document.getElementById('btn-load-gpx'),
     gpxFileInput: document.getElementById('gpx-file-input'),
     btnSaveGpx: document.getElementById('btn-save-gpx'),
+    btnThemeToggle: document.getElementById('btn-theme-toggle'),
+    themeIconMoon: document.getElementById('theme-icon-moon'),
+    themeIconSun: document.getElementById('theme-icon-sun'),
+    themeToggleLabel: document.getElementById('theme-toggle-label'),
     btnLoadSample: document.getElementById('btn-load-sample'),
     modeBanner: document.getElementById('mode-banner'),
     modeTitle: document.getElementById('mode-title'),
@@ -225,6 +229,48 @@
   el.sidebarToggle.addEventListener('click', () => {
     el.sidebar.classList.toggle('open');
   });
+
+  // Theme Toggle (Light / Dark Mode, defaults to Light)
+  function applyTheme(theme) {
+    const normalized = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', normalized);
+    if (el.themeIconMoon && el.themeIconSun && el.themeToggleLabel) {
+      if (normalized === 'light') {
+        el.themeIconMoon.classList.remove('hidden');
+        el.themeIconSun.classList.add('hidden');
+        el.themeToggleLabel.textContent = 'Dark';
+        el.btnThemeToggle.title = 'Switch to Dark Mode';
+      } else {
+        el.themeIconMoon.classList.add('hidden');
+        el.themeIconSun.classList.remove('hidden');
+        el.themeToggleLabel.textContent = 'Light';
+        el.btnThemeToggle.title = 'Switch to Light Mode';
+      }
+    }
+    try {
+      localStorage.setItem('memorymap_theme', normalized);
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  let initialTheme = 'light';
+  try {
+    const savedTheme = localStorage.getItem('memorymap_theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      initialTheme = savedTheme;
+    }
+  } catch (e) {
+    // Ignore storage errors
+  }
+  applyTheme(initialTheme);
+
+  if (el.btnThemeToggle) {
+    el.btnThemeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'light' ? 'dark' : 'light');
+    });
+  }
 
   // ==================== GEOMETRY & HAVERSINE HELPERS ====================
   function formatLatLon5(lat, lng) {
