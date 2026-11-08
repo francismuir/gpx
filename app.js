@@ -20,6 +20,8 @@
     mode: 'idle', // 'idle' | 'creating' | 'editing' | 'extending_after' | 'extending_before'
     tracks: [],
     activeTrackId: null,
+    renamingTrackId: null,
+    movingWaypoint: null, // { trackId, index } when positioning a newly inserted waypoint in edit mode
     nextTrackNumber: 1,
     inspectorMarker: null,
     searchMarker: null,
@@ -48,6 +50,21 @@
     cyclosm: L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
       maxZoom: 20,
       attribution: '&copy; OpenStreetMap contributors, Tiles style by <a href="https://www.cyclosm.org">CyclOSM</a>'
+    }),
+    cyclemap: L.layerGroup([
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }),
+      L.tileLayer('https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        opacity: 0.9,
+        attribution: '&copy; <a href="https://cycling.waymarkedtrails.org">Waymarked Trails: Cycling</a>'
+      })
+    ]),
+    transport: L.tileLayer('https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: 'Map <a href="https://memomaps.de/">memomaps.de</a> <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }),
     opentopo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
@@ -82,6 +99,8 @@
     {
       'OpenStreetMap Standard': baseLayers.osm,
       'CyclOSM (Cycle Map)': baseLayers.cyclosm,
+      'Cycle Map': baseLayers.cyclemap,
+      'Transport Map': baseLayers.transport,
       'OpenTopoMap (Topographic)': baseLayers.opentopo,
       'OSM Humanitarian': baseLayers.humanitarian
     },
@@ -108,6 +127,8 @@
     const mapKey = {
       'OpenStreetMap Standard': 'osm',
       'CyclOSM (Cycle Map)': 'cyclosm',
+      'Cycle Map': 'cyclemap',
+      'Transport Map': 'transport',
       'OpenTopoMap (Topographic)': 'opentopo',
       'OSM Humanitarian': 'humanitarian'
     }[e.name];
@@ -456,6 +477,17 @@
   }
 
   // ==================== TRACK DATA MODEL & RENDERING ====================
+  function formatWaypointName(oneBasedIndex) {
+    return `WP${String(oneBasedIndex).padStart(4, '0')}`;
+  }
+
+  function renumberTrackWaypoints(track) {
+    if (!track || !Array.isArray(track.waypoints)) return;
+    track.waypoints.forEach((wp, idx) => {
+      wp.name = formatWaypointName(idx + 1);
+    });
+  }
+
   function createTrackObject(name, waypoints = []) {
     const id = 'trk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
     const color = TRACK_COLORS[(state.tracks.length) % TRACK_COLORS.length];
@@ -463,12 +495,15 @@
       id,
       name: name || `Track ${state.nextTrackNumber++}`,
       color,
+      visible: true,
+      showWaypoints: true,
       waypoints, // [{ lat, lng, ele, name }]
       polyline: null,
       hitPolyline: null, // Wider invisible polyline for easier clicking on mobile/desktop
       markers: [],
       stats: computeTrackStats(waypoints)
     };
+    renumberTrackWaypoints(track);
     return track;
   }
 
@@ -480,10 +515,34 @@
     return state.tracks.find((t) => t.id === id) || null;
   }
 
+  function suppressMapClickThisTick() {
+    state.suppressNextMapClick = true;
+    setTimeout(() => {
+      state.suppressNextMapClick = false;
+    }, 0);
+  }
+
   /**
    * Renders or updates a track's semi-transparent polyline and waypoint markers on the Leaflet map
    */
   function renderTrackOnMap(track) {
+    renumberTrackWaypoints(track);
+
+    // Clear existing waypoint markers first
+    track.markers.forEach((m) => map.removeLayer(m));
+    track.markers = [];
+
+    // 5.1 If track is hidden, remove polylines from map and return
+    if (track.visible === false) {
+      if (track.polyline && map.hasLayer(track.polyline)) {
+        map.removeLayer(track.polyline);
+      }
+      if (track.hitPolyline && map.hasLayer(track.hitPolyline)) {
+        map.removeLayer(track.hitPolyline);
+      }
+      return;
+    }
+
     const latlngs = track.waypoints.map((w) => [w.lat, w.lng]);
     const isActive = track.id === state.activeTrackId;
 
@@ -506,13 +565,19 @@
 
       const onLineClick = (e) => {
         L.DomEvent.stopPropagation(e);
-        state.suppressNextMapClick = true;
+        suppressMapClickThisTick();
         handleTrackLineClick(track, e.latlng);
       };
 
       track.polyline.on('click', onLineClick);
       track.hitPolyline.on('click', onLineClick);
     } else {
+      if (!map.hasLayer(track.polyline)) {
+        track.polyline.addTo(map);
+      }
+      if (!map.hasLayer(track.hitPolyline)) {
+        track.hitPolyline.addTo(map);
+      }
       track.polyline.setLatLngs(latlngs);
       track.hitPolyline.setLatLngs(latlngs);
       track.polyline.setStyle({
@@ -522,30 +587,28 @@
       });
     }
 
+    // 5.2 If waypoints are hidden for this track, keep the line displayed and skip markers
+    if (track.showWaypoints === false) {
+      return;
+    }
+
     // 2. Waypoint Markers
-    // Clear existing markers and recreate
-    track.markers.forEach((m) => map.removeLayer(m));
-    track.markers = [];
-
-    const showAllMarkers = isActive && (
-      state.mode === 'creating' ||
-      state.mode === 'editing' ||
-      state.mode === 'extending_after' ||
-      state.mode === 'extending_before'
-    );
-
     track.waypoints.forEach((wp, index) => {
       const isFirst = index === 0;
       const isLast = index === track.waypoints.length - 1;
-
-      // When not active/editing, still show start & end markers or subtle dots
-      if (!showAllMarkers && !isFirst && !isLast && track.waypoints.length > 30 && index % 5 !== 0) {
-        return;
-      }
+      const wpName = wp.name || formatWaypointName(index + 1);
+      const isMovingThisWp = Boolean(
+        state.movingWaypoint &&
+        state.movingWaypoint.trackId === track.id &&
+        state.movingWaypoint.index === index
+      );
 
       let markerClass = 'wp-marker wp-mid';
-      let size = isActive ? 12 : 8;
-      if (isFirst) {
+      let size = isActive ? 12 : 10;
+      if (isMovingThisWp) {
+        markerClass = 'wp-marker wp-moving';
+        size = 16;
+      } else if (isFirst) {
         markerClass = 'wp-marker wp-start';
         size = 16;
       } else if (isLast && track.waypoints.length > 1) {
@@ -559,101 +622,227 @@
         iconAnchor: [size / 2, size / 2]
       });
 
-      const isDraggable = isActive && state.mode === 'editing';
+      const isDraggable = isActive && state.mode === 'editing' && !isMovingThisWp;
 
       const marker = L.marker([wp.lat, wp.lng], {
         icon,
         draggable: isDraggable,
-        title: `Waypoint #${index + 1}`
+        interactive: !isMovingThisWp,
+        title: wpName
       }).addTo(map);
 
       // Click on waypoint
-        marker.on('click', async (e) => {
-          L.DomEvent.stopPropagation(e);
-          state.suppressNextMapClick = true;
+      marker.on('click', async (e) => {
+        L.DomEvent.stopPropagation(e);
+        suppressMapClickThisTick();
 
-            // When creating or extending a track, disable waypoint selection/popup and instead
-            // add a new waypoint at this existing waypoint's position to the active track
-            if (
-              state.mode === 'creating' ||
-              state.mode === 'extending_after' ||
-              state.mode === 'extending_before'
-            ) {
-              await addWaypointToActiveTrack(wp.lat, wp.lng, wp.ele);
-              return;
-            }
+        // If currently moving a newly inserted waypoint in edit mode, clicking drops it here
+        if (state.movingWaypoint) {
+          await dropMovingWaypoint(marker.getLatLng());
+          return;
+        }
 
-            // Otherwise (in idle or editing mode), select this track in Edit Mode and show waypoint actions
-            if (state.activeTrackId !== track.id || state.mode === 'idle') {
-              enterEditMode(track.id);
-            }
+        // When creating or extending a track, disable waypoint selection/popup and instead
+        // add a new waypoint at this existing waypoint's position to the active track
+        if (
+          state.mode === 'creating' ||
+          state.mode === 'extending_after' ||
+          state.mode === 'extending_before'
+        ) {
+          await addWaypointToActiveTrack(wp.lat, wp.lng, wp.ele);
+          return;
+        }
 
-            openWaypointActionPopup(track, index, marker.getLatLng());
-          });
+        // Otherwise (in idle or editing mode), select this track in Edit Mode and show waypoint actions
+        if (state.activeTrackId !== track.id || state.mode === 'idle') {
+          enterEditMode(track.id);
+        }
 
-        // Drag waypoint to move location
-        marker.on('drag', (e) => {
-          const newPos = e.target.getLatLng();
-          track.waypoints[index].lat = newPos.lat;
-          track.waypoints[index].lng = newPos.lng;
-          const updatedLatLngs = track.waypoints.map((w) => [w.lat, w.lng]);
-          track.polyline.setLatLngs(updatedLatLngs);
-          track.hitPolyline.setLatLngs(updatedLatLngs);
-          updateTrackStatsAndUI(track.id, false);
-        });
-
-        marker.on('dragend', async (e) => {
-          const newPos = e.target.getLatLng();
-          track.waypoints[index].lat = newPos.lat;
-          track.waypoints[index].lng = newPos.lng;
-          renderTrackOnMap(track);
-          updateTrackStatsAndUI(track.id);
-          // Re-fetch elevation for moved waypoint
-          await fetchElevationsForWaypoints([track.waypoints[index]], track.id);
-        });
-
-        track.markers.push(marker);
+        openWaypointActionPopup(track, index, marker.getLatLng());
       });
+
+      // Drag waypoint to move location
+      marker.on('drag', (e) => {
+        const newPos = e.target.getLatLng();
+        track.waypoints[index].lat = newPos.lat;
+        track.waypoints[index].lng = newPos.lng;
+        const updatedLatLngs = track.waypoints.map((w) => [w.lat, w.lng]);
+        track.polyline.setLatLngs(updatedLatLngs);
+        track.hitPolyline.setLatLngs(updatedLatLngs);
+        updateTrackStatsAndUI(track.id, false);
+      });
+
+      marker.on('dragend', async (e) => {
+        const newPos = e.target.getLatLng();
+        track.waypoints[index].lat = newPos.lat;
+        track.waypoints[index].lng = newPos.lng;
+        renderTrackOnMap(track);
+        updateTrackStatsAndUI(track.id);
+        // Re-fetch elevation for moved waypoint
+        await fetchElevationsForWaypoints([track.waypoints[index]], track.id);
+      });
+
+      track.markers.push(marker);
+    });
+  }
+
+  /**
+   * Drops a currently moving waypoint at `latlng` and finalizes it in the track.
+   */
+  async function dropMovingWaypoint(latlng) {
+    if (!state.movingWaypoint) return;
+    const { trackId, index } = state.movingWaypoint;
+    state.movingWaypoint = null;
+
+    const track = getTrackById(trackId);
+    if (!track || !track.waypoints[index]) {
+      setMode(state.mode, state.activeTrackId);
+      return;
     }
+
+    if (latlng && typeof latlng.lat === 'number' && typeof latlng.lng === 'number') {
+      track.waypoints[index].lat = latlng.lat;
+      track.waypoints[index].lng = latlng.lng;
+    }
+
+    const droppedWp = track.waypoints[index];
+    setMode('editing', track.id);
+    await fetchElevationsForWaypoints([droppedWp], track.id);
+  }
 
   /**
    * Handles clicking on a track line:
+   * - If currently moving a newly inserted waypoint -> drops the waypoint at the clicked position.
    * - If currently creating or extending a track -> adds a waypoint at the clicked position.
-   * - If not currently editing this track -> enters Edit Mode on this track.
-   * - If already editing this track (or immediately upon clicking the segment) -> offers to insert a waypoint between the two surrounding waypoints!
+   * - If in edit mode (Requirement 3) -> automatically inserts a waypoint at that point and keeps it selected/moving with the cursor until the next click drops it.
+   * - If NOT in edit mode (Requirement 2) -> does NOT enter edit mode yet; offers popup to either Insert Waypoint (which enters edit mode) or Split Track Here (which stays out of edit mode).
    */
-        async function handleTrackLineClick(track, clickLatLng) {
-          if (
-            state.mode === 'creating' ||
-            state.mode === 'extending_after' ||
-            state.mode === 'extending_before'
-          ) {
-            await addWaypointToActiveTrack(clickLatLng.lat, clickLatLng.lng);
-            return;
-          }
+  async function handleTrackLineClick(track, clickLatLng) {
+    if (state.movingWaypoint) {
+      await dropMovingWaypoint(clickLatLng);
+      return;
+    }
 
-          const wasAlreadyEditingThisTrack = (state.activeTrackId === track.id && state.mode === 'editing');
+    if (
+      state.mode === 'creating' ||
+      state.mode === 'extending_after' ||
+      state.mode === 'extending_before'
+    ) {
+      await addWaypointToActiveTrack(clickLatLng.lat, clickLatLng.lng);
+      return;
+    }
 
-          if (!wasAlreadyEditingThisTrack) {
-            enterEditMode(track.id);
-          }
+    if (track.waypoints.length < 2) return;
+    const segIndex = findClosestSegmentIndex(track.waypoints, clickLatLng);
 
-          // Also show popup to insert a waypoint on the clicked line segment
-          if (track.waypoints.length >= 2) {
-            const segIndex = findClosestSegmentIndex(track.waypoints, clickLatLng);
-            openSegmentInsertPopup(track, segIndex, clickLatLng);
-          }
-        }
+    // Requirement 3: When in edit mode and clicking on a track, automatically add a waypoint at that point
+    // and keep it selected so the user can move it to a new position, then click again to drop it.
+    if (state.mode === 'editing') {
+      map.closePopup();
+      if (state.activeTrackId !== track.id) {
+        state.activeTrackId = track.id;
+      }
+      track.showWaypoints = true;
+      const newIndex = segIndex + 1;
+      const newWp = {
+        lat: clickLatLng.lat,
+        lng: clickLatLng.lng,
+        ele: null,
+        name: ''
+      };
+      track.waypoints.splice(newIndex, 0, newWp);
+      renumberTrackWaypoints(track);
+      state.movingWaypoint = { trackId: track.id, index: newIndex };
 
-        /**
-         * Opens popup when clicking on a line segment between two waypoints (Edit requirement #5)
-         */
-        function openSegmentInsertPopup(track, segIndex, clickLatLng) {
-          const formattedCoords = formatLatLon5(clickLatLng.lat, clickLatLng.lng);
-          const container = document.createElement('div');
-          container.innerHTML = `
+      el.mapEl.classList.add('crosshair-cursor');
+      el.floatingBanner.classList.remove('hidden');
+      el.floatingBannerText.textContent = `Moving ${newWp.name}: Move to position, then click to drop waypoint`;
+
+      renderTrackOnMap(track);
+      updateTrackStatsAndUI(track.id, false);
+      return;
+    }
+
+    // Requirement 2: When NOT in edit mode, offer the option to insert a waypoint (entering edit mode)
+    // OR split the track at that point into two tracks (without entering edit mode).
+    openSegmentInsertPopup(track, segIndex, clickLatLng);
+  }
+
+  /**
+   * Splits a track into two tracks starting and ending at clickLatLng without entering edit mode.
+   */
+  async function splitTrackAtSegment(track, segIndex, clickLatLng) {
+    const trackIdx = state.tracks.findIndex((t) => t.id === track.id);
+    if (trackIdx === -1 || track.waypoints.length < 2) return;
+
+    const splitLat = clickLatLng.lat;
+    const splitLng = clickLatLng.lng;
+    const baseName = track.name.replace(/\s*\(Part\s+\d+\)$/i, '');
+
+    const splitWpEnd = { lat: splitLat, lng: splitLng, ele: null, name: '' };
+    const splitWpStart = { lat: splitLat, lng: splitLng, ele: null, name: '' };
+
+    const firstWaypoints = [
+      ...track.waypoints.slice(0, segIndex + 1).map((w) => ({
+        lat: w.lat,
+        lng: w.lng,
+        ele: w.ele,
+        name: w.name
+      })),
+      splitWpEnd
+    ];
+
+    const secondWaypoints = [
+      splitWpStart,
+      ...track.waypoints.slice(segIndex + 1).map((w) => ({
+        lat: w.lat,
+        lng: w.lng,
+        ele: w.ele,
+        name: w.name
+      }))
+    ];
+
+    // Update original track as Part 1
+    track.name = `${baseName} (Part 1)`;
+    track.waypoints = firstWaypoints;
+    renumberTrackWaypoints(track);
+    track.stats = computeTrackStats(track.waypoints);
+
+    // Create Part 2 track right after Part 1
+    const secondTrack = createTrackObject(`${baseName} (Part 2)`, secondWaypoints);
+    secondTrack.visible = track.visible;
+    secondTrack.showWaypoints = track.showWaypoints;
+    state.tracks.splice(trackIdx + 1, 0, secondTrack);
+
+    // Stay out of edit mode (Requirement 2)
+    state.activeTrackId = track.id;
+    setMode('idle', track.id);
+    renderTrackOnMap(track);
+    renderTrackOnMap(secondTrack);
+    updateTrackStatsAndUI(track.id);
+
+    // Fetch elevation for the split point and update both tracks
+    const elev = await fetchSinglePointElevation(splitLat, splitLng);
+    if (elev !== null) {
+      splitWpEnd.ele = elev;
+      splitWpStart.ele = elev;
+      track.stats = computeTrackStats(track.waypoints);
+      secondTrack.stats = computeTrackStats(secondTrack.waypoints);
+      updateTrackStatsAndUI(state.activeTrackId);
+    }
+  }
+
+  /**
+   * Opens popup when clicking on a line segment between two waypoints when not in edit mode (Requirement 2)
+   */
+  function openSegmentInsertPopup(track, segIndex, clickLatLng) {
+    const formattedCoords = formatLatLon5(clickLatLng.lat, clickLatLng.lng);
+    const wpFrom = formatWaypointName(segIndex + 1);
+    const wpTo = formatWaypointName(segIndex + 2);
+    const container = document.createElement('div');
+    container.innerHTML = `
       <div class="popup-title">
-        <span>Track Segment (#${segIndex + 1} &rarr; #${segIndex + 2})</span>
+        <span>Track Segment (${wpFrom} &rarr; ${wpTo})</span>
       </div>
       <div class="popup-coords">
         <div class="coords-row">
@@ -662,61 +851,73 @@
         </div>
       </div>
       <div class="popup-detail">
-        Editing <strong>${escapeHtml(track.name)}</strong>
+        Track: <strong>${escapeHtml(track.name)}</strong>
       </div>
       <div class="popup-actions">
         <button type="button" class="popup-btn primary" id="popup-insert-between-btn">
-          + Add Waypoint Here (Between #${segIndex + 1} &amp; #${segIndex + 2})
+          + Insert Waypoint Here (${wpFrom} &ndash; ${wpTo})
+        </button>
+        <button type="button" class="popup-btn accent" id="popup-split-track-btn">
+          &#9986; Split Track Here
         </button>
       </div>
     `;
 
-          const popup = L.popup({ closeButton: true, autoPan: true })
-            .setLatLng(clickLatLng)
-            .setContent(container)
-            .openOn(map);
+    const popup = L.popup({ closeButton: true, autoPan: true })
+      .setLatLng(clickLatLng)
+      .setContent(container)
+      .openOn(map);
 
-          const insertBtn = container.querySelector('#popup-insert-between-btn');
-          insertBtn.addEventListener('click', async () => {
-            map.closePopup(popup);
-            const newWp = {
-              lat: clickLatLng.lat,
-              lng: clickLatLng.lng,
-              ele: null
-            };
-            track.waypoints.splice(segIndex + 1, 0, newWp);
-            renderTrackOnMap(track);
-            updateTrackStatsAndUI(track.id);
-            await fetchElevationsForWaypoints([newWp], track.id);
-          });
-        }
+    const insertBtn = container.querySelector('#popup-insert-between-btn');
+    insertBtn.addEventListener('click', async () => {
+      map.closePopup(popup);
+      const newWp = {
+        lat: clickLatLng.lat,
+        lng: clickLatLng.lng,
+        ele: null,
+        name: ''
+      };
+      track.showWaypoints = true;
+      track.waypoints.splice(segIndex + 1, 0, newWp);
+      renumberTrackWaypoints(track);
+      enterEditMode(track.id);
+      await fetchElevationsForWaypoints([newWp], track.id);
+    });
 
-        /**
-         * Opens popup when clicking a waypoint (Edit requirements #2, #6, #7):
-         * - Option to delete waypoint
-         * - If first waypoint (index 0): option to add waypoint BEFORE
-         * - If last waypoint (index length - 1): option to add waypoint AFTER
-         */
-        function openWaypointActionPopup(track, index, latlng) {
-          const wp = track.waypoints[index];
-          if (!wp) return;
+    const splitBtn = container.querySelector('#popup-split-track-btn');
+    splitBtn.addEventListener('click', async () => {
+      map.closePopup(popup);
+      await splitTrackAtSegment(track, segIndex, clickLatLng);
+    });
+  }
 
-          const isFirst = index === 0;
-          const isLast = index === track.waypoints.length - 1;
-          const total = track.waypoints.length;
+  /**
+   * Opens popup when clicking a waypoint (Edit requirements #2, #6, #7):
+   * - Option to delete waypoint
+   * - If first waypoint (index 0): option to add waypoint BEFORE
+   * - If last waypoint (index length - 1): option to add waypoint AFTER
+   */
+  function openWaypointActionPopup(track, index, latlng) {
+    const wp = track.waypoints[index];
+    if (!wp) return;
 
-          let badgeRole = 'Intermediate Waypoint';
-          if (isFirst && isLast) badgeRole = 'Single Waypoint';
-          else if (isFirst) badgeRole = 'Start Waypoint (First)';
-          else if (isLast) badgeRole = 'End Waypoint (Last)';
+    const isFirst = index === 0;
+    const isLast = index === track.waypoints.length - 1;
+    const total = track.waypoints.length;
+    const wpName = wp.name || formatWaypointName(index + 1);
 
-          const elevStr = typeof wp.ele === 'number' ? `${wp.ele} m` : 'Fetching...';
-          const formattedCoords = formatLatLon5(wp.lat, wp.lng);
+    let badgeRole = 'Intermediate Waypoint';
+    if (isFirst && isLast) badgeRole = 'Single Waypoint';
+    else if (isFirst) badgeRole = 'Start Waypoint (First)';
+    else if (isLast) badgeRole = 'End Waypoint (Last)';
 
-          const container = document.createElement('div');
-          container.innerHTML = `
+    const elevStr = typeof wp.ele === 'number' ? `${wp.ele} m` : 'Fetching...';
+    const formattedCoords = formatLatLon5(wp.lat, wp.lng);
+
+    const container = document.createElement('div');
+    container.innerHTML = `
       <div class="popup-title">
-        <span>Waypoint #${index + 1} of ${total}</span>
+        <span>${escapeHtml(wpName)} (${index + 1} of ${total})</span>
       </div>
       <div class="popup-coords">
         <div class="coords-row">
@@ -731,51 +932,52 @@
       <div class="popup-actions">
         ${isFirst ? `
           <button type="button" class="popup-btn accent" id="popup-add-before-btn">
-            &larr; Add Waypoint Before Start
+            &larr; Add Waypoint Before ${escapeHtml(wpName)}
           </button>
         ` : ''}
         ${isLast ? `
           <button type="button" class="popup-btn primary" id="popup-add-after-btn">
-            + Add Waypoint After End &rarr;
+            + Add Waypoint After ${escapeHtml(wpName)} &rarr;
           </button>
         ` : ''}
         <button type="button" class="popup-btn danger" id="popup-delete-wp-btn">
-          Delete Waypoint #${index + 1}
+          Delete ${escapeHtml(wpName)}
         </button>
       </div>
     `;
 
-          const popup = L.popup({ closeButton: true, offset: [0, -6] })
-            .setLatLng(latlng)
-            .setContent(container)
-            .openOn(map);
+    const popup = L.popup({ closeButton: true, offset: [0, -6] })
+      .setLatLng(latlng)
+      .setContent(container)
+      .openOn(map);
 
-          const addBeforeBtn = container.querySelector('#popup-add-before-btn');
-          if (addBeforeBtn) {
-            addBeforeBtn.addEventListener('click', () => {
-              map.closePopup(popup);
-              setMode('extending_before', track.id);
-            });
-          }
+    const addBeforeBtn = container.querySelector('#popup-add-before-btn');
+    if (addBeforeBtn) {
+      addBeforeBtn.addEventListener('click', () => {
+        map.closePopup(popup);
+        setMode('extending_before', track.id);
+      });
+    }
 
-          const addAfterBtn = container.querySelector('#popup-add-after-btn');
-          if (addAfterBtn) {
-            addAfterBtn.addEventListener('click', () => {
-              map.closePopup(popup);
-              setMode('extending_after', track.id);
-            });
-          }
+    const addAfterBtn = container.querySelector('#popup-add-after-btn');
+    if (addAfterBtn) {
+      addAfterBtn.addEventListener('click', () => {
+        map.closePopup(popup);
+        setMode('extending_after', track.id);
+      });
+    }
 
-          const deleteBtn = container.querySelector('#popup-delete-wp-btn');
-          if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-              map.closePopup(popup);
-              track.waypoints.splice(index, 1);
-              renderTrackOnMap(track);
-              updateTrackStatsAndUI(track.id);
-            });
-          }
-        }
+    const deleteBtn = container.querySelector('#popup-delete-wp-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        map.closePopup(popup);
+        track.waypoints.splice(index, 1);
+        renumberTrackWaypoints(track);
+        renderTrackOnMap(track);
+        updateTrackStatsAndUI(track.id);
+      });
+    }
+  }
 
         // ==================== MODES & WORKFLOWS ====================
         function setMode(newMode, trackId = state.activeTrackId) {
@@ -855,6 +1057,10 @@
 
         function finishCurrentMode() {
           map.closePopup();
+          if (state.movingWaypoint) {
+            dropMovingWaypoint(null);
+            return;
+          }
           if (state.mode === 'extending_after' || state.mode === 'extending_before') {
             setMode('editing', state.activeTrackId);
             return;
@@ -937,6 +1143,25 @@
           el.copyCursorCoordsBtn.dataset.lat = e.latlng.lat;
           el.copyCursorCoordsBtn.dataset.lng = e.latlng.lng;
           el.copyCursorCoordsBtn.classList.remove('hidden');
+
+          // If positioning a newly created waypoint in edit mode, move it live with the cursor
+          if (state.movingWaypoint) {
+            const movingTrack = getTrackById(state.movingWaypoint.trackId);
+            const idx = state.movingWaypoint.index;
+            if (movingTrack && movingTrack.waypoints[idx]) {
+              movingTrack.waypoints[idx].lat = e.latlng.lat;
+              movingTrack.waypoints[idx].lng = e.latlng.lng;
+              if (movingTrack.markers[idx]) {
+                movingTrack.markers[idx].setLatLng(e.latlng);
+              }
+              const updatedLatLngs = movingTrack.waypoints.map((w) => [w.lat, w.lng]);
+              if (movingTrack.polyline) movingTrack.polyline.setLatLngs(updatedLatLngs);
+              if (movingTrack.hitPolyline) movingTrack.hitPolyline.setLatLngs(updatedLatLngs);
+              updateTrackStatsAndUI(movingTrack.id, false);
+            }
+            return;
+          }
+
           if (state.mode === 'creating' || state.mode === 'extending_after' || state.mode === 'extending_before') {
             updatePreviewLine(e.latlng);
           }
@@ -972,6 +1197,12 @@
         map.on('click', async (e) => {
           if (state.suppressNextMapClick) {
             state.suppressNextMapClick = false;
+            return;
+          }
+
+          // If positioning a newly inserted waypoint in edit mode, clicking drops it here
+          if (state.movingWaypoint) {
+            await dropMovingWaypoint(e.latlng);
             return;
           }
 
@@ -1277,37 +1508,148 @@
           el.trackList.innerHTML = '';
           state.tracks.forEach((track) => {
             const stats = computeTrackStats(track.waypoints);
+            const isRenaming = state.renamingTrackId === track.id;
+            const isTrackVisible = track.visible !== false;
+            const isWaypointsVisible = track.showWaypoints !== false;
+
             const item = document.createElement('div');
-            item.className = `track-item ${track.id === state.activeTrackId ? 'active' : ''}`;
+            item.className = `track-item ${track.id === state.activeTrackId ? 'active' : ''} ${!isTrackVisible ? 'track-hidden' : ''}`;
             item.innerHTML = `
-        <div class="track-item-left">
-          <span class="track-color-swatch" style="background:${track.color}"></span>
-          <div class="track-item-info">
-            <div class="track-item-title">${escapeHtml(track.name)}</div>
-            <div class="track-item-sub">${stats.distanceKm.toFixed(2)} km &bull; +${stats.elevGain}m / -${stats.elevLoss}m &bull; ${track.waypoints.length} pts</div>
+        <div class="track-item-top">
+          <div class="track-item-left">
+            <span class="track-color-swatch" style="background:${track.color}"></span>
+            <div class="track-item-info">
+              ${isRenaming ? `
+                <div class="track-rename-row">
+                  <input type="text" class="track-rename-input" value="${escapeHtml(track.name)}" aria-label="Edit track name" />
+                  <button type="button" class="track-action-btn" data-action="save-rename" title="Save name">Save</button>
+                  <button type="button" class="track-action-btn" data-action="cancel-rename" title="Cancel">&times;</button>
+                </div>
+              ` : `
+                <div class="track-item-title-row">
+                  <div class="track-item-title" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</div>
+                </div>
+              `}
+              <div class="track-item-sub">${stats.distanceKm.toFixed(2)} km &bull; +${stats.elevGain}m / -${stats.elevLoss}m &bull; ${track.waypoints.length} pts</div>
+            </div>
+          </div>
+          <div class="track-item-actions">
+            <button type="button" class="track-action-btn" data-action="rename" title="Edit track name">Rename</button>
+            <button type="button" class="track-action-btn" data-action="zoom" title="Zoom to whole track">Fit</button>
+            <button type="button" class="track-action-btn" data-action="edit" title="Edit track">Edit</button>
+            <button type="button" class="track-action-btn delete" data-action="delete" title="Remove track">&times;</button>
           </div>
         </div>
-        <div class="track-item-actions">
-          <button type="button" class="track-action-btn" data-action="zoom" title="Zoom to whole track">Fit</button>
-          <button type="button" class="track-action-btn" data-action="edit" title="Edit track">Edit</button>
-          <button type="button" class="track-action-btn delete" data-action="delete" title="Remove track">&times;</button>
+        <div class="track-item-toggles">
+          <label class="track-toggle-label" title="Show or hide this track on the map">
+            <input type="checkbox" data-toggle="visible" ${isTrackVisible ? 'checked' : ''} />
+            <span>Show Track</span>
+          </label>
+          <label class="track-toggle-label ${!isTrackVisible ? 'disabled' : ''}" title="Show or hide all waypoints for this track">
+            <input type="checkbox" data-toggle="waypoints" ${isWaypointsVisible ? 'checked' : ''} ${!isTrackVisible ? 'disabled' : ''} />
+            <span>Show Waypoints</span>
+          </label>
         </div>
       `;
+
+            // Handle inline rename input if active
+            if (isRenaming) {
+              const inputEl = item.querySelector('.track-rename-input');
+              if (inputEl) {
+                setTimeout(() => {
+                  inputEl.focus();
+                  inputEl.select();
+                }, 0);
+
+                const commitRename = () => {
+                  const newName = inputEl.value.trim();
+                  if (newName) {
+                    track.name = newName;
+                  }
+                  state.renamingTrackId = null;
+                  if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
+                    setMode(state.mode, track.id);
+                  } else {
+                    updateTrackStatsAndUI(state.activeTrackId, false);
+                  }
+                };
+
+                inputEl.addEventListener('click', (ev) => ev.stopPropagation());
+                inputEl.addEventListener('keydown', (ev) => {
+                  ev.stopPropagation();
+                  if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    commitRename();
+                  } else if (ev.key === 'Escape') {
+                    ev.preventDefault();
+                    state.renamingTrackId = null;
+                    renderSidebarTrackList();
+                  }
+                });
+              }
+            }
+
+            // Handle Show Track & Show Waypoints toggles
+            const visCheckbox = item.querySelector('input[data-toggle="visible"]');
+            if (visCheckbox) {
+              visCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
+              visCheckbox.addEventListener('change', (ev) => {
+                track.visible = ev.target.checked;
+                renderTrackOnMap(track);
+                renderSidebarTrackList();
+              });
+            }
+
+            const wpCheckbox = item.querySelector('input[data-toggle="waypoints"]');
+            if (wpCheckbox) {
+              wpCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
+              wpCheckbox.addEventListener('change', (ev) => {
+                track.showWaypoints = ev.target.checked;
+                renderTrackOnMap(track);
+                renderSidebarTrackList();
+              });
+            }
+
+            item.querySelector('.track-item-toggles')?.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+            });
 
             item.addEventListener('click', (e) => {
               const actionBtn = e.target.closest('.track-action-btn');
               if (actionBtn) {
+                e.stopPropagation();
                 const action = actionBtn.dataset.action;
-                if (action === 'zoom') {
+                if (action === 'rename') {
+                  state.renamingTrackId = track.id;
+                  renderSidebarTrackList();
+                } else if (action === 'save-rename') {
+                  const inputEl = item.querySelector('.track-rename-input');
+                  const newName = inputEl ? inputEl.value.trim() : '';
+                  if (newName) {
+                    track.name = newName;
+                  }
+                  state.renamingTrackId = null;
+                  if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
+                    setMode(state.mode, track.id);
+                  } else {
+                    updateTrackStatsAndUI(state.activeTrackId, false);
+                  }
+                } else if (action === 'cancel-rename') {
+                  state.renamingTrackId = null;
+                  renderSidebarTrackList();
+                } else if (action === 'zoom') {
                   fitTrackBounds(track);
                 } else if (action === 'edit') {
+                  track.visible = true;
                   enterEditMode(track.id);
                 } else if (action === 'delete') {
                   deleteTrack(track.id);
                 }
                 return;
               }
-              enterEditMode(track.id);
+              state.activeTrackId = track.id;
+              state.tracks.forEach((t) => renderTrackOnMap(t));
+              updateTrackStatsAndUI(track.id);
             });
 
             el.trackList.appendChild(item);
@@ -1545,12 +1887,14 @@
         });
 
         function buildGpxXml(track, exportName) {
+          renumberTrackWaypoints(track);
           const nowIso = new Date().toISOString();
           const stats = computeTrackStats(track.waypoints);
           const trkptsXml = track.waypoints
             .map((wp, idx) => {
+              const wpName = wp.name || formatWaypointName(idx + 1);
               const eleTag = typeof wp.ele === 'number' && !isNaN(wp.ele) ? `\n        <ele>${wp.ele.toFixed(1)}</ele>` : '';
-              return `      <trkpt lat="${wp.lat.toFixed(6)}" lon="${wp.lng.toFixed(6)}">${eleTag}\n        <name>WP ${idx + 1}</name>\n      </trkpt>`;
+              return `      <trkpt lat="${wp.lat.toFixed(6)}" lon="${wp.lng.toFixed(6)}">${eleTag}\n        <name>${escapeXml(wpName)}</name>\n      </trkpt>`;
             })
             .join('\n');
 

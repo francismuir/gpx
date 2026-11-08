@@ -203,6 +203,14 @@
               <span class="layer-name">CyclOSM (Cycle Map Layer)</span>
             </label>
             <label class="layer-option">
+              <input type="radio" name="base-layer" value="cyclemap" />
+              <span class="layer-name">Cycle Map</span>
+            </label>
+            <label class="layer-option">
+              <input type="radio" name="base-layer" value="transport" />
+              <span class="layer-name">Transport Map</span>
+            </label>
+            <label class="layer-option">
               <input type="radio" name="base-layer" value="opentopo" />
               <span class="layer-name">OpenTopoMap (Contours &amp; Relief)</span>
             </label>
@@ -247,10 +255,10 @@
           <ul class="help-list">
             <li><strong>New Track:</strong> Click map to add waypoints. Semi-transparent line connects points. Press
               <kbd>Esc</kbd> to finish.</li>
-            <li><strong>Edit Track:</strong> Click any track line or waypoint to enter Edit Mode.</li>
+            <li><strong>Click Track (Explore Mode):</strong> Offer to insert a waypoint (entering Edit Mode) or split the track into two tracks at that point.</li>
+            <li><strong>Click Track (Edit Mode):</strong> Automatically adds a waypoint at that point so you can drag it into position.</li>
             <li><strong>Move Waypoint:</strong> Drag any waypoint marker to a new position.</li>
-            <li><strong>Insert Midpoint:</strong> Click anywhere on the track segment between two waypoints.</li>
-            <li><strong>Extend Start/End:</strong> Click the first waypoint to prepend before, or the last waypoint to
+            <li><strong>Extend Start/End:</strong> Click the first waypoint (WP0001) to prepend before, or the last waypoint to
               append after.</li>
             <li><strong>Delete Waypoint:</strong> Click a waypoint and choose <em>Delete Waypoint</em>.</li>
           </ul>

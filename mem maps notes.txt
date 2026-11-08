@@ -1,3 +1,7 @@
+-----------------------------
+Original Requirements
+-----------------------------
+
 I use a program called memory-maps on my Windows P.C. I want to create some of the functionality in a web based application that will run on my desktop and mobile browser. This is what I want to do.
 
 Load Open Street maps in to a window with the following functionality:
@@ -33,3 +37,44 @@ Edit a track:
 7. Clicking on the first waypoint gives the option to add a waypoint before.
 8. Information such as distance and elevation gain / loss are updated automatically.
 9. Click on the save button gives the option to save with the same name or use a new name and save the file in the GPX format.
+
+=============================
+Changes (7 Nov 2026)
+=============================
+
+-----------------------------
+Change #1
+-----------------------------
+
+I prefer light mode. How do I switch from dark mode.
+I would like you to add a toggle button.
+
+-----------------------------
+Change #2
+-----------------------------
+When I create a track by clicking on the map and adding waypoints. If I click on an existing waypoint, the app stops creating the track and switches to waypoint selection mode by showing me information about the waypoint and giving me the option to  delete it. This should only be possible when I am not creating a track. Will you disable waypoint selection when the user is creating a track. If the user does click on an existing waypoint then create a new waypoint at that position and add it to the track that is being created or edited.
+
+=============================
+Changes (8 Nov 2026)
+=============================
+
+-----------------------------
+Change #1
+-----------------------------
+
+Make the following changes to the app.
+
+1. There are currently four layers included from OSM. Add two additional layers - cycle map and transport map.
+2. When I am not in edit mode and I click on a track, offer the option to split the track at that point. Create two tracks starting and ending at that point. Currently it starts editing the track and offers the option to insert a waypoint at that point. I want to keep that functionality but offer the split option as well. If I split the track do not enter edit mode. Only enter edit mode if I insert a waypoint.
+3. When I am in edit mode and I click on a track automatically add a waypoint at that point and allow me to position that waypoint by dragging it to a new location. This will then be added to the track.
+4. Waypoints should be named WPnnnn where nnnn is a number. So the first waypoint will be named "WP0001", the second "WP0002" and so on.
+5. In the left panel where it displays the tracks that have been loaded or created,
+5.1 provide a toggle to show and hide the track.
+5.2 provide a toggle to show and hide all the waypoints. The line will always be displayed unless I hae hidden the track.
+5.3 provide an edit name option to allow me to edit the name of the track.
+
+-----------------------------
+Change #2
+-----------------------------
+
+Change 3 above automatically creates a new waypoint when I click anywhere on the track while I am in edit mode. This is correct but I also want it to keep that waypoint selected so that I can move it to a new position by dragging it. When I click again, the waypoint will be dropped at that point and added to the track.

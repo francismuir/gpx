@@ -633,20 +633,19 @@ body {
 .track-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .track-item {
   background: var(--bg-dark);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 7px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
 }
 
 .track-item:hover {
@@ -656,6 +655,19 @@ body {
 .track-item.active {
   border-color: var(--accent);
   background: rgba(59, 130, 246, 0.12);
+}
+
+.track-item.track-hidden .track-item-title,
+.track-item.track-hidden .track-color-swatch {
+  opacity: 0.5;
+}
+
+.track-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 
 .track-item-left {
@@ -678,12 +690,40 @@ body {
   flex: 1;
 }
 
+.track-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
 .track-item-title {
   font-size: 0.83rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.track-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.track-rename-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  color: var(--text-main);
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  outline: none;
 }
 
 .track-item-sub {
@@ -695,17 +735,19 @@ body {
 .track-item-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .track-action-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 4px;
+  padding: 4px 5px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .track-action-btn:hover {
@@ -715,6 +757,35 @@ body {
 
 .track-action-btn.delete:hover {
   color: var(--danger);
+}
+
+.track-item-toggles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.track-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.track-toggle-label input[type="checkbox"] {
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.track-toggle-label.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Layers Control */
@@ -1046,6 +1117,13 @@ kbd {
 
 .wp-marker.wp-mid {
   background: #3b82f6;
+}
+
+.wp-marker.wp-moving {
+  background: #f59e0b;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.45), 0 2px 8px rgba(0, 0, 0, 0.55);
+  pointer-events: none !important;
 }
 
 /* ==================== MODAL DIALOG ==================== */
