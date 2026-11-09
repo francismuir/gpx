@@ -32,7 +32,7 @@
   // ==================== MAP INITIALIZATION & LAYERS ====================
   // Default center: Lake District / Peak District UK (classic Memory-Map territory)
   const map = L.map('map', {
-    center: [54.455, -3.088],
+    center: [53.477, -3.025],
     zoom: 12,
     zoomControl: false,
     doubleClickZoom: false // Prevent accidental zoom while clicking waypoints rapidly
@@ -979,295 +979,295 @@
     }
   }
 
-        // ==================== MODES & WORKFLOWS ====================
-        function setMode(newMode, trackId = state.activeTrackId) {
-          state.mode = newMode;
-          if (trackId !== undefined) {
-            state.activeTrackId = trackId;
-          }
+  // ==================== MODES & WORKFLOWS ====================
+  function setMode(newMode, trackId = state.activeTrackId) {
+    state.mode = newMode;
+    if (trackId !== undefined) {
+      state.activeTrackId = trackId;
+    }
 
-          clearPreviewLine();
+    clearPreviewLine();
 
-          const activeTrack = getActiveTrack();
+    const activeTrack = getActiveTrack();
 
-          // Update UI classes
-          el.modeBanner.className = 'mode-banner';
-          el.btnNewTrack.classList.remove('active-drawing');
-          el.mapEl.classList.remove('crosshair-cursor');
-          el.floatingBanner.classList.add('hidden');
-          el.modeActions.classList.add('hidden');
+    // Update UI classes
+    el.modeBanner.className = 'mode-banner';
+    el.btnNewTrack.classList.remove('active-drawing');
+    el.mapEl.classList.remove('crosshair-cursor');
+    el.floatingBanner.classList.add('hidden');
+    el.modeActions.classList.add('hidden');
 
-          if (newMode === 'idle') {
-            el.modeBanner.classList.add('mode-idle');
-            el.modeTitle.textContent = 'Explore Mode';
-            el.modeDesc.innerHTML = 'Click any point on the map for coordinates, elevation &amp; place info, or click any track to edit.';
-          } else if (newMode === 'creating') {
-            el.modeBanner.classList.add('mode-creating');
-            el.btnNewTrack.classList.add('active-drawing');
-            el.mapEl.classList.add('crosshair-cursor');
-            el.modeTitle.textContent = `Creating: ${activeTrack ? activeTrack.name : 'Track'}`;
-            el.modeDesc.innerHTML = 'Click anywhere on the map to add waypoints. Press <kbd>Esc</kbd> to finish creating.';
-            el.modeActions.classList.remove('hidden');
-            el.floatingBanner.classList.remove('hidden');
-            el.floatingBannerText.textContent = 'Creating Track: Click map to add waypoints';
-          } else if (newMode === 'editing') {
-            el.modeBanner.classList.add('mode-editing');
-            el.modeTitle.textContent = `Editing: ${activeTrack ? activeTrack.name : 'Track'}`;
-            el.modeDesc.innerHTML = 'Drag waypoints to move, click a waypoint to delete or extend start/end, or click the line to insert a waypoint.';
-            el.modeActions.classList.remove('hidden');
-            el.floatingBanner.classList.remove('hidden');
-            el.floatingBannerText.textContent = `Editing ${activeTrack ? activeTrack.name : 'Track'}: Drag points, click line to insert, or click waypoint`;
-          } else if (newMode === 'extending_after') {
-            el.modeBanner.classList.add('mode-extending');
-            el.mapEl.classList.add('crosshair-cursor');
-            el.modeTitle.textContent = 'Adding Waypoints After End';
-            el.modeDesc.innerHTML = 'Click on the map to append new waypoints after the last waypoint. Press <kbd>Esc</kbd> to return to Edit Mode.';
-            el.modeActions.classList.remove('hidden');
-            el.floatingBanner.classList.remove('hidden');
-            el.floatingBannerText.textContent = 'Click map to add waypoint AFTER last point (Esc to stop)';
-          } else if (newMode === 'extending_before') {
-            el.modeBanner.classList.add('mode-extending');
-            el.mapEl.classList.add('crosshair-cursor');
-            el.modeTitle.textContent = 'Adding Waypoints Before Start';
-            el.modeDesc.innerHTML = 'Click on the map to prepend new waypoints before the first waypoint. Press <kbd>Esc</kbd> to return to Edit Mode.';
-            el.modeActions.classList.remove('hidden');
-            el.floatingBanner.classList.remove('hidden');
-            el.floatingBannerText.textContent = 'Click map to add waypoint BEFORE first point (Esc to stop)';
-          }
+    if (newMode === 'idle') {
+      el.modeBanner.classList.add('mode-idle');
+      el.modeTitle.textContent = 'Explore Mode';
+      el.modeDesc.innerHTML = 'Click any point on the map for coordinates, elevation &amp; place info, or click any track to edit.';
+    } else if (newMode === 'creating') {
+      el.modeBanner.classList.add('mode-creating');
+      el.btnNewTrack.classList.add('active-drawing');
+      el.mapEl.classList.add('crosshair-cursor');
+      el.modeTitle.textContent = `Creating: ${activeTrack ? activeTrack.name : 'Track'}`;
+      el.modeDesc.innerHTML = 'Click anywhere on the map to add waypoints. Press <kbd>Esc</kbd> to finish creating.';
+      el.modeActions.classList.remove('hidden');
+      el.floatingBanner.classList.remove('hidden');
+      el.floatingBannerText.textContent = 'Creating Track: Click map to add waypoints';
+    } else if (newMode === 'editing') {
+      el.modeBanner.classList.add('mode-editing');
+      el.modeTitle.textContent = `Editing: ${activeTrack ? activeTrack.name : 'Track'}`;
+      el.modeDesc.innerHTML = 'Drag waypoints to move, click a waypoint to delete or extend start/end, or click the line to insert a waypoint.';
+      el.modeActions.classList.remove('hidden');
+      el.floatingBanner.classList.remove('hidden');
+      el.floatingBannerText.textContent = `Editing ${activeTrack ? activeTrack.name : 'Track'}: Drag points, click line to insert, or click waypoint`;
+    } else if (newMode === 'extending_after') {
+      el.modeBanner.classList.add('mode-extending');
+      el.mapEl.classList.add('crosshair-cursor');
+      el.modeTitle.textContent = 'Adding Waypoints After End';
+      el.modeDesc.innerHTML = 'Click on the map to append new waypoints after the last waypoint. Press <kbd>Esc</kbd> to return to Edit Mode.';
+      el.modeActions.classList.remove('hidden');
+      el.floatingBanner.classList.remove('hidden');
+      el.floatingBannerText.textContent = 'Click map to add waypoint AFTER last point (Esc to stop)';
+    } else if (newMode === 'extending_before') {
+      el.modeBanner.classList.add('mode-extending');
+      el.mapEl.classList.add('crosshair-cursor');
+      el.modeTitle.textContent = 'Adding Waypoints Before Start';
+      el.modeDesc.innerHTML = 'Click on the map to prepend new waypoints before the first waypoint. Press <kbd>Esc</kbd> to return to Edit Mode.';
+      el.modeActions.classList.remove('hidden');
+      el.floatingBanner.classList.remove('hidden');
+      el.floatingBannerText.textContent = 'Click map to add waypoint BEFORE first point (Esc to stop)';
+    }
 
-          // Re-render all tracks so active track highlights and enables marker dragging
-          state.tracks.forEach((t) => renderTrackOnMap(t));
-          updateTrackStatsAndUI(state.activeTrackId);
+    // Re-render all tracks so active track highlights and enables marker dragging
+    state.tracks.forEach((t) => renderTrackOnMap(t));
+    updateTrackStatsAndUI(state.activeTrackId);
+  }
+
+  function startNewTrack() {
+    map.closePopup();
+    const newTrack = createTrackObject(`Track ${state.nextTrackNumber++}`, []);
+    state.tracks.push(newTrack);
+    state.activeTrackId = newTrack.id;
+    setMode('creating', newTrack.id);
+  }
+
+  function enterEditMode(trackId) {
+    const track = getTrackById(trackId);
+    if (!track) return;
+    state.activeTrackId = track.id;
+    setMode('editing', track.id);
+  }
+
+  function finishCurrentMode() {
+    map.closePopup();
+    if (state.movingWaypoint) {
+      dropMovingWaypoint(null);
+      return;
+    }
+    if (state.mode === 'extending_after' || state.mode === 'extending_before') {
+      setMode('editing', state.activeTrackId);
+      return;
+    }
+
+    // If finishing creation of an empty track, remove it
+    const active = getActiveTrack();
+    if (state.mode === 'creating' && active && active.waypoints.length === 0) {
+      deleteTrack(active.id);
+      return;
+    }
+
+    setMode('idle', state.activeTrackId);
+  }
+
+  function deleteTrack(trackId) {
+    const idx = state.tracks.findIndex((t) => t.id === trackId);
+    if (idx === -1) return;
+    const t = state.tracks[idx];
+    if (t.polyline) map.removeLayer(t.polyline);
+    if (t.hitPolyline) map.removeLayer(t.hitPolyline);
+    t.markers.forEach((m) => map.removeLayer(m));
+    state.tracks.splice(idx, 1);
+
+    if (state.activeTrackId === trackId) {
+      state.activeTrackId = state.tracks.length > 0 ? state.tracks[state.tracks.length - 1].id : null;
+      setMode('idle', state.activeTrackId);
+    } else {
+      updateTrackStatsAndUI(state.activeTrackId);
+    }
+  }
+
+  // Rubber-band preview line during creation / extension
+  function updatePreviewLine(cursorLatLng) {
+    const track = getActiveTrack();
+    if (!track || track.waypoints.length === 0) {
+      clearPreviewLine();
+      return;
+    }
+
+    let anchorWp = null;
+    if (state.mode === 'creating' || state.mode === 'extending_after') {
+      anchorWp = track.waypoints[track.waypoints.length - 1];
+    } else if (state.mode === 'extending_before') {
+      anchorWp = track.waypoints[0];
+    } else {
+      clearPreviewLine();
+      return;
+    }
+
+    const latlngs = [
+      [anchorWp.lat, anchorWp.lng],
+      [cursorLatLng.lat, cursorLatLng.lng]
+    ];
+
+    if (!state.previewLine) {
+      state.previewLine = L.polyline(latlngs, {
+        color: track.color,
+        weight: 3,
+        opacity: 0.5,
+        dashArray: '6, 6',
+        interactive: false
+      }).addTo(map);
+    } else {
+      state.previewLine.setLatLngs(latlngs);
+      state.previewLine.setStyle({ color: track.color });
+    }
+  }
+
+  function clearPreviewLine() {
+    if (state.previewLine) {
+      map.removeLayer(state.previewLine);
+      state.previewLine = null;
+    }
+  }
+
+  // ==================== MAP INTERACTION EVENTS ====================
+  map.on('mousemove', (e) => {
+    el.cursorCoords.textContent = formatLatLon5(e.latlng.lat, e.latlng.lng);
+    el.copyCursorCoordsBtn.dataset.lat = e.latlng.lat;
+    el.copyCursorCoordsBtn.dataset.lng = e.latlng.lng;
+    el.copyCursorCoordsBtn.classList.remove('hidden');
+
+    // If positioning a newly created waypoint in edit mode, move it live with the cursor
+    if (state.movingWaypoint) {
+      const movingTrack = getTrackById(state.movingWaypoint.trackId);
+      const idx = state.movingWaypoint.index;
+      if (movingTrack && movingTrack.waypoints[idx]) {
+        movingTrack.waypoints[idx].lat = e.latlng.lat;
+        movingTrack.waypoints[idx].lng = e.latlng.lng;
+        if (movingTrack.markers[idx]) {
+          movingTrack.markers[idx].setLatLng(e.latlng);
         }
+        const updatedLatLngs = movingTrack.waypoints.map((w) => [w.lat, w.lng]);
+        if (movingTrack.polyline) movingTrack.polyline.setLatLngs(updatedLatLngs);
+        if (movingTrack.hitPolyline) movingTrack.hitPolyline.setLatLngs(updatedLatLngs);
+        updateTrackStatsAndUI(movingTrack.id, false);
+      }
+      return;
+    }
 
-        function startNewTrack() {
-          map.closePopup();
-          const newTrack = createTrackObject(`Track ${state.nextTrackNumber++}`, []);
-          state.tracks.push(newTrack);
-          state.activeTrackId = newTrack.id;
-          setMode('creating', newTrack.id);
-        }
+    if (state.mode === 'creating' || state.mode === 'extending_after' || state.mode === 'extending_before') {
+      updatePreviewLine(e.latlng);
+    }
+  });
 
-        function enterEditMode(trackId) {
-          const track = getTrackById(trackId);
-          if (!track) return;
-          state.activeTrackId = track.id;
-          setMode('editing', track.id);
-        }
+  async function addWaypointToActiveTrack(lat, lng, existingEle = null) {
+    const activeTrack = getActiveTrack();
+    if (!activeTrack) return;
 
-        function finishCurrentMode() {
-          map.closePopup();
-          if (state.movingWaypoint) {
-            dropMovingWaypoint(null);
-            return;
-          }
-          if (state.mode === 'extending_after' || state.mode === 'extending_before') {
-            setMode('editing', state.activeTrackId);
-            return;
-          }
+    const hasValidEle = typeof existingEle === 'number' && !isNaN(existingEle);
+    const wp = {
+      lat,
+      lng,
+      ele: hasValidEle ? existingEle : null
+    };
 
-          // If finishing creation of an empty track, remove it
-          const active = getActiveTrack();
-          if (state.mode === 'creating' && active && active.waypoints.length === 0) {
-            deleteTrack(active.id);
-            return;
-          }
+    if (state.mode === 'creating' || state.mode === 'extending_after') {
+      activeTrack.waypoints.push(wp);
+    } else if (state.mode === 'extending_before') {
+      activeTrack.waypoints.unshift(wp);
+    } else {
+      return;
+    }
 
-          setMode('idle', state.activeTrackId);
-        }
+    renderTrackOnMap(activeTrack);
+    updateTrackStatsAndUI(activeTrack.id);
 
-        function deleteTrack(trackId) {
-          const idx = state.tracks.findIndex((t) => t.id === trackId);
-          if (idx === -1) return;
-          const t = state.tracks[idx];
-          if (t.polyline) map.removeLayer(t.polyline);
-          if (t.hitPolyline) map.removeLayer(t.hitPolyline);
-          t.markers.forEach((m) => map.removeLayer(m));
-          state.tracks.splice(idx, 1);
+    if (!hasValidEle) {
+      await fetchElevationsForWaypoints([wp], activeTrack.id);
+    }
+  }
 
-          if (state.activeTrackId === trackId) {
-            state.activeTrackId = state.tracks.length > 0 ? state.tracks[state.tracks.length - 1].id : null;
-            setMode('idle', state.activeTrackId);
-          } else {
-            updateTrackStatsAndUI(state.activeTrackId);
-          }
-        }
+  map.on('click', async (e) => {
+    if (state.suppressNextMapClick) {
+      state.suppressNextMapClick = false;
+      return;
+    }
 
-        // Rubber-band preview line during creation / extension
-        function updatePreviewLine(cursorLatLng) {
-          const track = getActiveTrack();
-          if (!track || track.waypoints.length === 0) {
-            clearPreviewLine();
-            return;
-          }
+    // If positioning a newly inserted waypoint in edit mode, clicking drops it here
+    if (state.movingWaypoint) {
+      await dropMovingWaypoint(e.latlng);
+      return;
+    }
 
-          let anchorWp = null;
-          if (state.mode === 'creating' || state.mode === 'extending_after') {
-            anchorWp = track.waypoints[track.waypoints.length - 1];
-          } else if (state.mode === 'extending_before') {
-            anchorWp = track.waypoints[0];
-          } else {
-            clearPreviewLine();
-            return;
-          }
+    const { lat, lng } = e.latlng;
+    const activeTrack = getActiveTrack();
 
-          const latlngs = [
-            [anchorWp.lat, anchorWp.lng],
-            [cursorLatLng.lat, cursorLatLng.lng]
-          ];
+    // 1. Creating a new track or extending (after end / before start)
+    if (
+      (state.mode === 'creating' ||
+        state.mode === 'extending_after' ||
+        state.mode === 'extending_before') &&
+      activeTrack
+    ) {
+      await addWaypointToActiveTrack(lat, lng);
+      return;
+    }
 
-          if (!state.previewLine) {
-            state.previewLine = L.polyline(latlngs, {
-              color: track.color,
-              weight: 3,
-              opacity: 0.5,
-              dashArray: '6, 6',
-              interactive: false
-            }).addTo(map);
-          } else {
-            state.previewLine.setLatLngs(latlngs);
-            state.previewLine.setStyle({ color: track.color });
-          }
-        }
+    // 2. In Idle or Editing mode: clicking empty map inspects that point (Requirement #4)
+    inspectMapPoint(lat, lng);
+  });
 
-        function clearPreviewLine() {
-          if (state.previewLine) {
-            map.removeLayer(state.previewLine);
-            state.previewLine = null;
-          }
-        }
+  // Escape key to finish track creation / extension / editing (Requirement #5)
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!el.saveModal.classList.contains('hidden')) {
+        closeSaveModal();
+        return;
+      }
+      if (state.mode !== 'idle') {
+        finishCurrentMode();
+      }
+    }
+  });
 
-        // ==================== MAP INTERACTION EVENTS ====================
-        map.on('mousemove', (e) => {
-          el.cursorCoords.textContent = formatLatLon5(e.latlng.lat, e.latlng.lng);
-          el.copyCursorCoordsBtn.dataset.lat = e.latlng.lat;
-          el.copyCursorCoordsBtn.dataset.lng = e.latlng.lng;
-          el.copyCursorCoordsBtn.classList.remove('hidden');
+  el.btnNewTrack.addEventListener('click', () => {
+    if (state.mode === 'creating') {
+      finishCurrentMode();
+    } else {
+      startNewTrack();
+    }
+  });
 
-          // If positioning a newly created waypoint in edit mode, move it live with the cursor
-          if (state.movingWaypoint) {
-            const movingTrack = getTrackById(state.movingWaypoint.trackId);
-            const idx = state.movingWaypoint.index;
-            if (movingTrack && movingTrack.waypoints[idx]) {
-              movingTrack.waypoints[idx].lat = e.latlng.lat;
-              movingTrack.waypoints[idx].lng = e.latlng.lng;
-              if (movingTrack.markers[idx]) {
-                movingTrack.markers[idx].setLatLng(e.latlng);
-              }
-              const updatedLatLngs = movingTrack.waypoints.map((w) => [w.lat, w.lng]);
-              if (movingTrack.polyline) movingTrack.polyline.setLatLngs(updatedLatLngs);
-              if (movingTrack.hitPolyline) movingTrack.hitPolyline.setLatLngs(updatedLatLngs);
-              updateTrackStatsAndUI(movingTrack.id, false);
-            }
-            return;
-          }
+  el.btnFinishMode.addEventListener('click', finishCurrentMode);
+  el.floatingBannerBtn.addEventListener('click', finishCurrentMode);
 
-          if (state.mode === 'creating' || state.mode === 'extending_after' || state.mode === 'extending_before') {
-            updatePreviewLine(e.latlng);
-          }
-        });
+  // ==================== POINT INSPECTOR (CLICK ANY POINT FOR INFO) ====================
+  async function inspectMapPoint(lat, lng) {
+    if (state.inspectorMarker) {
+      map.removeLayer(state.inspectorMarker);
+    }
 
-        async function addWaypointToActiveTrack(lat, lng, existingEle = null) {
-          const activeTrack = getActiveTrack();
-          if (!activeTrack) return;
+    el.btnClearInspector.classList.remove('hidden');
 
-          const hasValidEle = typeof existingEle === 'number' && !isNaN(existingEle);
-          const wp = {
-            lat,
-            lng,
-            ele: hasValidEle ? existingEle : null
-          };
+    // Place marker & open loading popup
+    state.inspectorMarker = L.circleMarker([lat, lng], {
+      radius: 7,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#10b981',
+      fillOpacity: 0.9
+    }).addTo(map);
 
-          if (state.mode === 'creating' || state.mode === 'extending_after') {
-            activeTrack.waypoints.push(wp);
-          } else if (state.mode === 'extending_before') {
-            activeTrack.waypoints.unshift(wp);
-          } else {
-            return;
-          }
+    const formattedCoords = formatLatLon5(lat, lng);
 
-          renderTrackOnMap(activeTrack);
-          updateTrackStatsAndUI(activeTrack.id);
-
-          if (!hasValidEle) {
-            await fetchElevationsForWaypoints([wp], activeTrack.id);
-          }
-        }
-
-        map.on('click', async (e) => {
-          if (state.suppressNextMapClick) {
-            state.suppressNextMapClick = false;
-            return;
-          }
-
-          // If positioning a newly inserted waypoint in edit mode, clicking drops it here
-          if (state.movingWaypoint) {
-            await dropMovingWaypoint(e.latlng);
-            return;
-          }
-
-          const { lat, lng } = e.latlng;
-          const activeTrack = getActiveTrack();
-
-            // 1. Creating a new track or extending (after end / before start)
-            if (
-              (state.mode === 'creating' ||
-                state.mode === 'extending_after' ||
-                state.mode === 'extending_before') &&
-              activeTrack
-            ) {
-              await addWaypointToActiveTrack(lat, lng);
-              return;
-            }
-
-            // 2. In Idle or Editing mode: clicking empty map inspects that point (Requirement #4)
-            inspectMapPoint(lat, lng);
-          });
-
-        // Escape key to finish track creation / extension / editing (Requirement #5)
-        window.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            if (!el.saveModal.classList.contains('hidden')) {
-              closeSaveModal();
-              return;
-            }
-            if (state.mode !== 'idle') {
-              finishCurrentMode();
-            }
-          }
-        });
-
-        el.btnNewTrack.addEventListener('click', () => {
-          if (state.mode === 'creating') {
-            finishCurrentMode();
-          } else {
-            startNewTrack();
-          }
-        });
-
-        el.btnFinishMode.addEventListener('click', finishCurrentMode);
-        el.floatingBannerBtn.addEventListener('click', finishCurrentMode);
-
-        // ==================== POINT INSPECTOR (CLICK ANY POINT FOR INFO) ====================
-        async function inspectMapPoint(lat, lng) {
-          if (state.inspectorMarker) {
-            map.removeLayer(state.inspectorMarker);
-          }
-
-          el.btnClearInspector.classList.remove('hidden');
-
-          // Place marker & open loading popup
-          state.inspectorMarker = L.circleMarker([lat, lng], {
-            radius: 7,
-            color: '#ffffff',
-            weight: 2,
-            fillColor: '#10b981',
-            fillOpacity: 0.9
-          }).addTo(map);
-
-          const formattedCoords = formatLatLon5(lat, lng);
-
-          const initialHtml = `
+    const initialHtml = `
       <div class="popup-title">Point Information</div>
       <div class="popup-coords">
         <div class="coords-row">
@@ -1278,9 +1278,9 @@
       <div class="popup-detail">Fetching elevation &amp; place details...</div>
     `;
 
-          state.inspectorMarker.bindPopup(initialHtml).openPopup();
+    state.inspectorMarker.bindPopup(initialHtml).openPopup();
 
-          el.pointInspector.innerHTML = `
+    el.pointInspector.innerHTML = `
       <div class="inspector-grid">
         <span class="inspector-key">Lat, Lon:</span>
         <span class="inspector-val coords-row">
@@ -1293,31 +1293,31 @@
       <div class="inspector-address" id="insp-addr">Looking up OSM place info...</div>
     `;
 
-          // Fetch Elevation & Nominatim Reverse Geocode in parallel
-          const [elev, placeData] = await Promise.all([
-            fetchSinglePointElevation(lat, lng),
-            reverseGeocodeNominatim(lat, lng)
-          ]);
+    // Fetch Elevation & Nominatim Reverse Geocode in parallel
+    const [elev, placeData] = await Promise.all([
+      fetchSinglePointElevation(lat, lng),
+      reverseGeocodeNominatim(lat, lng)
+    ]);
 
-          const elevText = elev !== null ? `${elev} m (${Math.round(elev * 3.28084)} ft)` : 'N/A';
-          const placeName = placeData?.display_name || 'Open area / Unnamed location';
-          const category = placeData?.type ? `${placeData.class || ''}: ${placeData.type}`.replace(/^:\s*/, '') : '';
+    const elevText = elev !== null ? `${elev} m (${Math.round(elev * 3.28084)} ft)` : 'N/A';
+    const placeName = placeData?.display_name || 'Open area / Unnamed location';
+    const category = placeData?.type ? `${placeData.class || ''}: ${placeData.type}`.replace(/^:\s*/, '') : '';
 
-          // Update Sidebar Inspector
-          const inspElevEl = document.getElementById('insp-elev');
-          const inspAddrEl = document.getElementById('insp-addr');
-          if (inspElevEl) inspElevEl.textContent = elevText;
-          if (inspAddrEl) {
-            inspAddrEl.innerHTML = `
+    // Update Sidebar Inspector
+    const inspElevEl = document.getElementById('insp-elev');
+    const inspAddrEl = document.getElementById('insp-addr');
+    if (inspElevEl) inspElevEl.textContent = elevText;
+    if (inspAddrEl) {
+      inspAddrEl.innerHTML = `
         ${category ? `<strong style="color:#10b981;text-transform:capitalize;">${escapeHtml(category)}</strong><br/>` : ''}
         ${escapeHtml(placeName)}
       `;
-          }
+    }
 
-          // Update Map Popup if still open
-          if (state.inspectorMarker && map.hasLayer(state.inspectorMarker)) {
-            const popupContent = document.createElement('div');
-            popupContent.innerHTML = `
+    // Update Map Popup if still open
+    if (state.inspectorMarker && map.hasLayer(state.inspectorMarker)) {
+      const popupContent = document.createElement('div');
+      popupContent.innerHTML = `
         <div class="popup-title">
           <span>${escapeHtml(placeData?.name || 'Clicked Point')}</span>
         </div>
@@ -1334,187 +1334,187 @@
         </div>
       `;
 
-            state.inspectorMarker.setPopupContent(popupContent);
-            const startBtn = popupContent.querySelector('#insp-start-track-here');
-            if (startBtn) {
-              startBtn.addEventListener('click', () => {
-                map.closePopup();
-                startNewTrack();
-                const active = getActiveTrack();
-                const wp = { lat, lng, ele: elev };
-                active.waypoints.push(wp);
-                renderTrackOnMap(active);
-                updateTrackStatsAndUI(active.id);
-              });
-            }
-          }
-        }
-
-        async function reverseGeocodeNominatim(lat, lng) {
-          try {
-            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}&zoom=18&addressdetails=1`;
-            const resp = await fetch(url, {
-              headers: { 'Accept-Language': 'en' }
-            });
-            if (resp.ok) {
-              return await resp.json();
-            }
-          } catch (e) {
-            console.warn('Reverse geocode error:', e);
-          }
-          return null;
-        }
-
-        el.btnClearInspector.addEventListener('click', () => {
-          if (state.inspectorMarker) {
-            map.removeLayer(state.inspectorMarker);
-            state.inspectorMarker = null;
-          }
-          el.btnClearInspector.classList.add('hidden');
-          el.pointInspector.innerHTML = `<p class="empty-state-sm">Click any point on the map (when not drawing) to inspect its coordinates, elevation, and address.</p>`;
+      state.inspectorMarker.setPopupContent(popupContent);
+      const startBtn = popupContent.querySelector('#insp-start-track-here');
+      if (startBtn) {
+        startBtn.addEventListener('click', () => {
+          map.closePopup();
+          startNewTrack();
+          const active = getActiveTrack();
+          const wp = { lat, lng, ele: elev };
+          active.waypoints.push(wp);
+          renderTrackOnMap(active);
+          updateTrackStatsAndUI(active.id);
         });
+      }
+    }
+  }
 
-        // ==================== SEARCH PLACES & POIs (NOMINATIM) ====================
-        let searchDebounceTimer = null;
+  async function reverseGeocodeNominatim(lat, lng) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}&zoom=18&addressdetails=1`;
+      const resp = await fetch(url, {
+        headers: { 'Accept-Language': 'en' }
+      });
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (e) {
+      console.warn('Reverse geocode error:', e);
+    }
+    return null;
+  }
 
-        el.searchInput.addEventListener('input', () => {
-          const q = el.searchInput.value.trim();
-          el.searchClearBtn.classList.toggle('hidden', q.length === 0);
+  el.btnClearInspector.addEventListener('click', () => {
+    if (state.inspectorMarker) {
+      map.removeLayer(state.inspectorMarker);
+      state.inspectorMarker = null;
+    }
+    el.btnClearInspector.classList.add('hidden');
+    el.pointInspector.innerHTML = `<p class="empty-state-sm">Click any point on the map (when not drawing) to inspect its coordinates, elevation, and address.</p>`;
+  });
 
-          clearTimeout(searchDebounceTimer);
-          if (q.length < 2) {
-            el.searchResults.classList.add('hidden');
-            return;
-          }
+  // ==================== SEARCH PLACES & POIs (NOMINATIM) ====================
+  let searchDebounceTimer = null;
 
-          searchDebounceTimer = setTimeout(() => {
-            performPlaceSearch(q);
-          }, 320);
-        });
+  el.searchInput.addEventListener('input', () => {
+    const q = el.searchInput.value.trim();
+    el.searchClearBtn.classList.toggle('hidden', q.length === 0);
 
-        el.searchInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            clearTimeout(searchDebounceTimer);
-            const q = el.searchInput.value.trim();
-            if (q.length >= 2) performPlaceSearch(q);
-          }
-        });
+    clearTimeout(searchDebounceTimer);
+    if (q.length < 2) {
+      el.searchResults.classList.add('hidden');
+      return;
+    }
 
-        el.searchClearBtn.addEventListener('click', () => {
-          el.searchInput.value = '';
-          el.searchClearBtn.classList.add('hidden');
-          el.searchResults.classList.add('hidden');
-          if (state.searchMarker) {
-            map.removeLayer(state.searchMarker);
-            state.searchMarker = null;
-          }
-        });
+    searchDebounceTimer = setTimeout(() => {
+      performPlaceSearch(q);
+    }, 320);
+  });
 
-        document.addEventListener('click', (e) => {
-          if (!e.target.closest('.search-container')) {
-            el.searchResults.classList.add('hidden');
-          }
-        });
+  el.searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(searchDebounceTimer);
+      const q = el.searchInput.value.trim();
+      if (q.length >= 2) performPlaceSearch(q);
+    }
+  });
 
-        async function performPlaceSearch(query) {
-          try {
-            const bounds = map.getBounds();
-            const viewbox = `${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()},${bounds.getSouth()}`;
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=7&addressdetails=1&viewbox=${viewbox}`;
-            const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-            if (!resp.ok) return;
-            const results = await resp.json();
+  el.searchClearBtn.addEventListener('click', () => {
+    el.searchInput.value = '';
+    el.searchClearBtn.classList.add('hidden');
+    el.searchResults.classList.add('hidden');
+    if (state.searchMarker) {
+      map.removeLayer(state.searchMarker);
+      state.searchMarker = null;
+    }
+  });
 
-            el.searchResults.innerHTML = '';
-            if (results.length === 0) {
-              el.searchResults.innerHTML = `<li style="cursor:default;"><span class="search-result-sub">No matching places or POIs found.</span></li>`;
-              el.searchResults.classList.remove('hidden');
-              return;
-            }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-container')) {
+      el.searchResults.classList.add('hidden');
+    }
+  });
 
-            results.forEach((item) => {
-              const li = document.createElement('li');
-              const mainTitle = item.name || item.display_name.split(',')[0];
-              const typeLabel = item.type ? ` (${item.type.replace(/_/g, ' ')})` : '';
-              li.innerHTML = `
+  async function performPlaceSearch(query) {
+    try {
+      const bounds = map.getBounds();
+      const viewbox = `${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()},${bounds.getSouth()}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=7&addressdetails=1&viewbox=${viewbox}`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      if (!resp.ok) return;
+      const results = await resp.json();
+
+      el.searchResults.innerHTML = '';
+      if (results.length === 0) {
+        el.searchResults.innerHTML = `<li style="cursor:default;"><span class="search-result-sub">No matching places or POIs found.</span></li>`;
+        el.searchResults.classList.remove('hidden');
+        return;
+      }
+
+      results.forEach((item) => {
+        const li = document.createElement('li');
+        const mainTitle = item.name || item.display_name.split(',')[0];
+        const typeLabel = item.type ? ` (${item.type.replace(/_/g, ' ')})` : '';
+        li.innerHTML = `
           <span class="search-result-title">${escapeHtml(mainTitle)}${escapeHtml(typeLabel)}</span>
           <span class="search-result-sub">${escapeHtml(item.display_name)}</span>
         `;
-              li.addEventListener('click', () => {
-                el.searchResults.classList.add('hidden');
-                const lat = parseFloat(item.lat);
-                const lng = parseFloat(item.lon);
-                map.flyTo([lat, lng], 15, { duration: 1.0 });
-                inspectMapPoint(lat, lng);
-              });
-              el.searchResults.appendChild(li);
-            });
+        li.addEventListener('click', () => {
+          el.searchResults.classList.add('hidden');
+          const lat = parseFloat(item.lat);
+          const lng = parseFloat(item.lon);
+          map.flyTo([lat, lng], 15, { duration: 1.0 });
+          inspectMapPoint(lat, lng);
+        });
+        el.searchResults.appendChild(li);
+      });
 
-            el.searchResults.classList.remove('hidden');
-          } catch (err) {
-            console.warn('Search error:', err);
-          }
-        }
+      el.searchResults.classList.remove('hidden');
+    } catch (err) {
+      console.warn('Search error:', err);
+    }
+  }
 
-        // ==================== UI & TELEMETRY UPDATER ====================
-        function updateTrackStatsAndUI(trackId, redrawProfile = true) {
-          const track = getTrackById(trackId);
+  // ==================== UI & TELEMETRY UPDATER ====================
+  function updateTrackStatsAndUI(trackId, redrawProfile = true) {
+    const track = getTrackById(trackId);
 
-          if (track) {
-            track.stats = computeTrackStats(track.waypoints);
-            el.activeTrackName.textContent = track.name;
-            el.activeTrackPts.textContent = `${track.waypoints.length} pts`;
-            el.statDistance.textContent = track.stats.distanceKm.toFixed(2);
-            el.statDistanceMi.textContent = `${track.stats.distanceMiles.toFixed(2)} mi`;
-            el.statElevGain.textContent = `+${track.stats.elevGain}`;
-            el.statElevLoss.textContent = `-${track.stats.elevLoss}`;
-            el.statElevRange.textContent = track.stats.hasElev
-              ? `Min: ${track.stats.minElev}m | Max: ${track.stats.maxElev}m`
-              : 'Min: — | Max: —';
+    if (track) {
+      track.stats = computeTrackStats(track.waypoints);
+      el.activeTrackName.textContent = track.name;
+      el.activeTrackPts.textContent = `${track.waypoints.length} pts`;
+      el.statDistance.textContent = track.stats.distanceKm.toFixed(2);
+      el.statDistanceMi.textContent = `${track.stats.distanceMiles.toFixed(2)} mi`;
+      el.statElevGain.textContent = `+${track.stats.elevGain}`;
+      el.statElevLoss.textContent = `-${track.stats.elevLoss}`;
+      el.statElevRange.textContent = track.stats.hasElev
+        ? `Min: ${track.stats.minElev}m | Max: ${track.stats.maxElev}m`
+        : 'Min: — | Max: —';
 
-            el.btnSaveGpx.disabled = track.waypoints.length === 0;
+      el.btnSaveGpx.disabled = track.waypoints.length === 0;
 
-            if (redrawProfile) {
-              drawElevationProfile(track);
-            }
-          } else {
-            el.activeTrackName.textContent = 'No track selected';
-            el.activeTrackPts.textContent = '0 pts';
-            el.statDistance.textContent = '0.00';
-            el.statDistanceMi.textContent = '0.00 mi';
-            el.statElevGain.textContent = '+0';
-            el.statElevLoss.textContent = '-0';
-            el.statElevRange.textContent = 'Min: — | Max: —';
-            el.btnSaveGpx.disabled = true;
-            el.elevProfileContainer.classList.add('hidden');
-          }
+      if (redrawProfile) {
+        drawElevationProfile(track);
+      }
+    } else {
+      el.activeTrackName.textContent = 'No track selected';
+      el.activeTrackPts.textContent = '0 pts';
+      el.statDistance.textContent = '0.00';
+      el.statDistanceMi.textContent = '0.00 mi';
+      el.statElevGain.textContent = '+0';
+      el.statElevLoss.textContent = '-0';
+      el.statElevRange.textContent = 'Min: — | Max: —';
+      el.btnSaveGpx.disabled = true;
+      el.elevProfileContainer.classList.add('hidden');
+    }
 
-          renderSidebarTrackList();
-        }
+    renderSidebarTrackList();
+  }
 
-        function renderSidebarTrackList() {
-          el.trackCount.textContent = String(state.tracks.length);
+  function renderSidebarTrackList() {
+    el.trackCount.textContent = String(state.tracks.length);
 
-          if (state.tracks.length === 0) {
-            el.trackList.innerHTML = `
+    if (state.tracks.length === 0) {
+      el.trackList.innerHTML = `
         <div class="empty-state">
           No tracks yet. Click <strong>New Track</strong> to draw on the map or <strong>Load GPX</strong> to open a file.
         </div>
       `;
-            return;
-          }
+      return;
+    }
 
-          el.trackList.innerHTML = '';
-          state.tracks.forEach((track) => {
-            const stats = computeTrackStats(track.waypoints);
-            const isRenaming = state.renamingTrackId === track.id;
-            const isTrackVisible = track.visible !== false;
-            const isWaypointsVisible = track.showWaypoints !== false;
+    el.trackList.innerHTML = '';
+    state.tracks.forEach((track) => {
+      const stats = computeTrackStats(track.waypoints);
+      const isRenaming = state.renamingTrackId === track.id;
+      const isTrackVisible = track.visible !== false;
+      const isWaypointsVisible = track.showWaypoints !== false;
 
-            const item = document.createElement('div');
-            item.className = `track-item ${track.id === state.activeTrackId ? 'active' : ''} ${!isTrackVisible ? 'track-hidden' : ''}`;
-            item.innerHTML = `
+      const item = document.createElement('div');
+      item.className = `track-item ${track.id === state.activeTrackId ? 'active' : ''} ${!isTrackVisible ? 'track-hidden' : ''}`;
+      item.innerHTML = `
         <div class="track-item-top">
           <div class="track-item-left">
             <span class="track-color-swatch" style="background:${track.color}"></span>
@@ -1552,249 +1552,249 @@
         </div>
       `;
 
-            // Handle inline rename input if active
-            if (isRenaming) {
-              const inputEl = item.querySelector('.track-rename-input');
-              if (inputEl) {
-                setTimeout(() => {
-                  inputEl.focus();
-                  inputEl.select();
-                }, 0);
+      // Handle inline rename input if active
+      if (isRenaming) {
+        const inputEl = item.querySelector('.track-rename-input');
+        if (inputEl) {
+          setTimeout(() => {
+            inputEl.focus();
+            inputEl.select();
+          }, 0);
 
-                const commitRename = () => {
-                  const newName = inputEl.value.trim();
-                  if (newName) {
-                    track.name = newName;
-                  }
-                  state.renamingTrackId = null;
-                  if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
-                    setMode(state.mode, track.id);
-                  } else {
-                    updateTrackStatsAndUI(state.activeTrackId, false);
-                  }
-                };
-
-                inputEl.addEventListener('click', (ev) => ev.stopPropagation());
-                inputEl.addEventListener('keydown', (ev) => {
-                  ev.stopPropagation();
-                  if (ev.key === 'Enter') {
-                    ev.preventDefault();
-                    commitRename();
-                  } else if (ev.key === 'Escape') {
-                    ev.preventDefault();
-                    state.renamingTrackId = null;
-                    renderSidebarTrackList();
-                  }
-                });
-              }
+          const commitRename = () => {
+            const newName = inputEl.value.trim();
+            if (newName) {
+              track.name = newName;
             }
-
-            // Handle Show Track & Show Waypoints toggles
-            const visCheckbox = item.querySelector('input[data-toggle="visible"]');
-            if (visCheckbox) {
-              visCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
-              visCheckbox.addEventListener('change', (ev) => {
-                track.visible = ev.target.checked;
-                renderTrackOnMap(track);
-                renderSidebarTrackList();
-              });
+            state.renamingTrackId = null;
+            if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
+              setMode(state.mode, track.id);
+            } else {
+              updateTrackStatsAndUI(state.activeTrackId, false);
             }
+          };
 
-            const wpCheckbox = item.querySelector('input[data-toggle="waypoints"]');
-            if (wpCheckbox) {
-              wpCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
-              wpCheckbox.addEventListener('change', (ev) => {
-                track.showWaypoints = ev.target.checked;
-                renderTrackOnMap(track);
-                renderSidebarTrackList();
-              });
+          inputEl.addEventListener('click', (ev) => ev.stopPropagation());
+          inputEl.addEventListener('keydown', (ev) => {
+            ev.stopPropagation();
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              commitRename();
+            } else if (ev.key === 'Escape') {
+              ev.preventDefault();
+              state.renamingTrackId = null;
+              renderSidebarTrackList();
             }
-
-            item.querySelector('.track-item-toggles')?.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-            });
-
-            item.addEventListener('click', (e) => {
-              const actionBtn = e.target.closest('.track-action-btn');
-              if (actionBtn) {
-                e.stopPropagation();
-                const action = actionBtn.dataset.action;
-                if (action === 'rename') {
-                  state.renamingTrackId = track.id;
-                  renderSidebarTrackList();
-                } else if (action === 'save-rename') {
-                  const inputEl = item.querySelector('.track-rename-input');
-                  const newName = inputEl ? inputEl.value.trim() : '';
-                  if (newName) {
-                    track.name = newName;
-                  }
-                  state.renamingTrackId = null;
-                  if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
-                    setMode(state.mode, track.id);
-                  } else {
-                    updateTrackStatsAndUI(state.activeTrackId, false);
-                  }
-                } else if (action === 'cancel-rename') {
-                  state.renamingTrackId = null;
-                  renderSidebarTrackList();
-                } else if (action === 'zoom') {
-                  fitTrackBounds(track);
-                } else if (action === 'edit') {
-                  track.visible = true;
-                  enterEditMode(track.id);
-                } else if (action === 'delete') {
-                  deleteTrack(track.id);
-                }
-                return;
-              }
-              state.activeTrackId = track.id;
-              state.tracks.forEach((t) => renderTrackOnMap(t));
-              updateTrackStatsAndUI(track.id);
-            });
-
-            el.trackList.appendChild(item);
           });
         }
+      }
 
-        function fitTrackBounds(track) {
-          if (!track || track.waypoints.length === 0) return;
-          if (track.waypoints.length === 1) {
-            map.setView([track.waypoints[0].lat, track.waypoints[0].lng], 15);
-            return;
-          }
-          const bounds = L.latLngBounds(track.waypoints.map((w) => [w.lat, w.lng]));
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-        }
-
-        // ==================== ELEVATION SPARKLINE CANVAS ====================
-        function drawElevationProfile(track) {
-          const validPts = track.waypoints.filter((w) => typeof w.ele === 'number');
-          if (validPts.length < 2) {
-            el.elevProfileContainer.classList.add('hidden');
-            return;
-          }
-
-          el.elevProfileContainer.classList.remove('hidden');
-          const canvas = el.elevCanvas;
-          const ctx = canvas.getContext('2d');
-          const width = canvas.width;
-          const height = canvas.height;
-
-          ctx.clearRect(0, 0, width, height);
-
-          let minE = Math.min(...validPts.map((p) => p.ele));
-          let maxE = Math.max(...validPts.map((p) => p.ele));
-          if (maxE - minE < 10) {
-            minE -= 5;
-            maxE += 5;
-          }
-
-          const padTop = 8;
-          const padBot = 8;
-          const plotH = height - padTop - padBot;
-
-          ctx.beginPath();
-          validPts.forEach((pt, i) => {
-            const x = (i / (validPts.length - 1)) * width;
-            const y = padTop + plotH - ((pt.ele - minE) / (maxE - minE)) * plotH;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          });
-
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          // Fill gradient under curve
-          ctx.lineTo(width, height);
-          ctx.lineTo(0, height);
-          ctx.closePath();
-          const grad = ctx.createLinearGradient(0, 0, 0, height);
-          grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
-          grad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
-          ctx.fillStyle = grad;
-          ctx.fill();
-        }
-
-        // ==================== LOAD GPX FILE FROM FILESYSTEM ====================
-        el.btnLoadGpx.addEventListener('click', () => {
-          el.gpxFileInput.value = '';
-          el.gpxFileInput.click();
+      // Handle Show Track & Show Waypoints toggles
+      const visCheckbox = item.querySelector('input[data-toggle="visible"]');
+      if (visCheckbox) {
+        visCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
+        visCheckbox.addEventListener('change', (ev) => {
+          track.visible = ev.target.checked;
+          renderTrackOnMap(track);
+          renderSidebarTrackList();
         });
+      }
 
-        el.gpxFileInput.addEventListener('change', (e) => {
-          const files = Array.from(e.target.files || []);
-          files.forEach((file) => {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-              const xmlText = ev.target.result;
-              await parseAndLoadGpxString(xmlText, file.name.replace(/\.gpx$/i, ''));
-            };
-            reader.readAsText(file);
-          });
+      const wpCheckbox = item.querySelector('input[data-toggle="waypoints"]');
+      if (wpCheckbox) {
+        wpCheckbox.addEventListener('click', (ev) => ev.stopPropagation());
+        wpCheckbox.addEventListener('change', (ev) => {
+          track.showWaypoints = ev.target.checked;
+          renderTrackOnMap(track);
+          renderSidebarTrackList();
         });
+      }
 
-        async function parseAndLoadGpxString(xmlString, fallbackName) {
-          try {
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(xmlString, 'text/xml');
+      item.querySelector('.track-item-toggles')?.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+      });
 
-            // Extract track name
-            const nameNode = xml.querySelector('trk > name') || xml.querySelector('rte > name') || xml.querySelector('metadata > name');
-            const trackName = (nameNode && nameNode.textContent.trim()) ? nameNode.textContent.trim() : (fallbackName || `Loaded Track ${state.nextTrackNumber}`);
-
-            // Extract points from <trkpt>, <rtept>, or <wpt>
-            let ptNodes = Array.from(xml.querySelectorAll('trkpt'));
-            if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('rtept'));
-            if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('wpt'));
-
-            if (ptNodes.length === 0) {
-              alert('No valid GPX track points (<trkpt>, <rtept>, or <wpt>) found in this file.');
-              return;
+      item.addEventListener('click', (e) => {
+        const actionBtn = e.target.closest('.track-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          const action = actionBtn.dataset.action;
+          if (action === 'rename') {
+            state.renamingTrackId = track.id;
+            renderSidebarTrackList();
+          } else if (action === 'save-rename') {
+            const inputEl = item.querySelector('.track-rename-input');
+            const newName = inputEl ? inputEl.value.trim() : '';
+            if (newName) {
+              track.name = newName;
             }
-
-            const waypoints = [];
-            const missingElevWps = [];
-
-            ptNodes.forEach((node) => {
-              const lat = parseFloat(node.getAttribute('lat'));
-              const lng = parseFloat(node.getAttribute('lon'));
-              if (isNaN(lat) || isNaN(lng)) return;
-
-              const eleNode = node.querySelector('ele');
-              const eleVal = eleNode ? parseFloat(eleNode.textContent) : NaN;
-              const wp = {
-                lat,
-                lng,
-                ele: !isNaN(eleVal) ? Math.round(eleVal * 10) / 10 : null
-              };
-              if (wp.ele === null) missingElevWps.push(wp);
-              waypoints.push(wp);
-            });
-
-            const track = createTrackObject(trackName, waypoints);
-            state.tracks.push(track);
-            state.activeTrackId = track.id;
-
-            // Render track, update stats, and move map view to show the whole track (Requirement #2, #3, #4)
-            setMode('idle', track.id);
-            renderTrackOnMap(track);
-            updateTrackStatsAndUI(track.id);
+            state.renamingTrackId = null;
+            if (state.activeTrackId === track.id && (state.mode === 'editing' || state.mode === 'creating')) {
+              setMode(state.mode, track.id);
+            } else {
+              updateTrackStatsAndUI(state.activeTrackId, false);
+            }
+          } else if (action === 'cancel-rename') {
+            state.renamingTrackId = null;
+            renderSidebarTrackList();
+          } else if (action === 'zoom') {
             fitTrackBounds(track);
-
-            // If any points in the GPX lacked <ele> tags, automatically fetch DEM elevations
-            if (missingElevWps.length > 0) {
-              await fetchElevationsForWaypoints(missingElevWps, track.id);
-            }
-          } catch (err) {
-            console.error('Error parsing GPX file:', err);
-            alert('Failed to parse GPX file. Please check that it is a valid XML GPX file.');
+          } else if (action === 'edit') {
+            track.visible = true;
+            enterEditMode(track.id);
+          } else if (action === 'delete') {
+            deleteTrack(track.id);
           }
+          return;
         }
+        state.activeTrackId = track.id;
+        state.tracks.forEach((t) => renderTrackOnMap(t));
+        updateTrackStatsAndUI(track.id);
+      });
 
-        // Demo Track Loader for quick testing
-        el.btnLoadSample.addEventListener('click', async () => {
-          const sampleGpx = `<?xml version="1.0" encoding="UTF-8"?>
+      el.trackList.appendChild(item);
+    });
+  }
+
+  function fitTrackBounds(track) {
+    if (!track || track.waypoints.length === 0) return;
+    if (track.waypoints.length === 1) {
+      map.setView([track.waypoints[0].lat, track.waypoints[0].lng], 15);
+      return;
+    }
+    const bounds = L.latLngBounds(track.waypoints.map((w) => [w.lat, w.lng]));
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+  }
+
+  // ==================== ELEVATION SPARKLINE CANVAS ====================
+  function drawElevationProfile(track) {
+    const validPts = track.waypoints.filter((w) => typeof w.ele === 'number');
+    if (validPts.length < 2) {
+      el.elevProfileContainer.classList.add('hidden');
+      return;
+    }
+
+    el.elevProfileContainer.classList.remove('hidden');
+    const canvas = el.elevCanvas;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    let minE = Math.min(...validPts.map((p) => p.ele));
+    let maxE = Math.max(...validPts.map((p) => p.ele));
+    if (maxE - minE < 10) {
+      minE -= 5;
+      maxE += 5;
+    }
+
+    const padTop = 8;
+    const padBot = 8;
+    const plotH = height - padTop - padBot;
+
+    ctx.beginPath();
+    validPts.forEach((pt, i) => {
+      const x = (i / (validPts.length - 1)) * width;
+      const y = padTop + plotH - ((pt.ele - minE) / (maxE - minE)) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Fill gradient under curve
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+    grad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // ==================== LOAD GPX FILE FROM FILESYSTEM ====================
+  el.btnLoadGpx.addEventListener('click', () => {
+    el.gpxFileInput.value = '';
+    el.gpxFileInput.click();
+  });
+
+  el.gpxFileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const xmlText = ev.target.result;
+        await parseAndLoadGpxString(xmlText, file.name.replace(/\.gpx$/i, ''));
+      };
+      reader.readAsText(file);
+    });
+  });
+
+  async function parseAndLoadGpxString(xmlString, fallbackName) {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlString, 'text/xml');
+
+      // Extract track name
+      const nameNode = xml.querySelector('trk > name') || xml.querySelector('rte > name') || xml.querySelector('metadata > name');
+      const trackName = (nameNode && nameNode.textContent.trim()) ? nameNode.textContent.trim() : (fallbackName || `Loaded Track ${state.nextTrackNumber}`);
+
+      // Extract points from <trkpt>, <rtept>, or <wpt>
+      let ptNodes = Array.from(xml.querySelectorAll('trkpt'));
+      if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('rtept'));
+      if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('wpt'));
+
+      if (ptNodes.length === 0) {
+        alert('No valid GPX track points (<trkpt>, <rtept>, or <wpt>) found in this file.');
+        return;
+      }
+
+      const waypoints = [];
+      const missingElevWps = [];
+
+      ptNodes.forEach((node) => {
+        const lat = parseFloat(node.getAttribute('lat'));
+        const lng = parseFloat(node.getAttribute('lon'));
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const eleNode = node.querySelector('ele');
+        const eleVal = eleNode ? parseFloat(eleNode.textContent) : NaN;
+        const wp = {
+          lat,
+          lng,
+          ele: !isNaN(eleVal) ? Math.round(eleVal * 10) / 10 : null
+        };
+        if (wp.ele === null) missingElevWps.push(wp);
+        waypoints.push(wp);
+      });
+
+      const track = createTrackObject(trackName, waypoints);
+      state.tracks.push(track);
+      state.activeTrackId = track.id;
+
+      // Render track, update stats, and move map view to show the whole track (Requirement #2, #3, #4)
+      setMode('idle', track.id);
+      renderTrackOnMap(track);
+      updateTrackStatsAndUI(track.id);
+      fitTrackBounds(track);
+
+      // If any points in the GPX lacked <ele> tags, automatically fetch DEM elevations
+      if (missingElevWps.length > 0) {
+        await fetchElevationsForWaypoints(missingElevWps, track.id);
+      }
+    } catch (err) {
+      console.error('Error parsing GPX file:', err);
+      alert('Failed to parse GPX file. Please check that it is a valid XML GPX file.');
+    }
+  }
+
+  // Demo Track Loader for quick testing
+  el.btnLoadSample.addEventListener('click', async () => {
+    const sampleGpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="MemoryMap Web" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
     <name>Catbells Lakeland Ridge Loop</name>
@@ -1810,95 +1810,95 @@
     </trkseg>
   </trk>
 </gpx>`;
-          await parseAndLoadGpxString(sampleGpx, 'Catbells Lakeland Ridge Loop');
-        });
+    await parseAndLoadGpxString(sampleGpx, 'Catbells Lakeland Ridge Loop');
+  });
 
-        // ==================== SAVE GPX MODAL & EXPORT ====================
-        el.btnSaveGpx.addEventListener('click', () => {
-          const track = getActiveTrack();
-          if (!track || track.waypoints.length === 0) return;
+  // ==================== SAVE GPX MODAL & EXPORT ====================
+  el.btnSaveGpx.addEventListener('click', () => {
+    const track = getActiveTrack();
+    if (!track || track.waypoints.length === 0) return;
 
-          const cleanSameFile = sanitizeFileName(track.name) + '.gpx';
-          el.saveSameNamePreview.textContent = cleanSameFile;
-          el.saveTrackNameInput.value = track.name;
+    const cleanSameFile = sanitizeFileName(track.name) + '.gpx';
+    el.saveSameNamePreview.textContent = cleanSameFile;
+    el.saveTrackNameInput.value = track.name;
 
-          // Default to "same" radio option
-          const sameRadio = document.querySelector('input[name="save-name-option"][value="same"]');
-          if (sameRadio) sameRadio.checked = true;
-          el.newNameInputGroup.classList.add('hidden');
+    // Default to "same" radio option
+    const sameRadio = document.querySelector('input[name="save-name-option"][value="same"]');
+    if (sameRadio) sameRadio.checked = true;
+    el.newNameInputGroup.classList.add('hidden');
 
-          const stats = computeTrackStats(track.waypoints);
-          el.saveSummaryPts.textContent = `${track.waypoints.length} waypoints`;
-          el.saveSummaryDist.textContent = `${stats.distanceKm.toFixed(2)} km`;
-          el.saveSummaryElev.textContent = `+${stats.elevGain}m / -${stats.elevLoss}m`;
+    const stats = computeTrackStats(track.waypoints);
+    el.saveSummaryPts.textContent = `${track.waypoints.length} waypoints`;
+    el.saveSummaryDist.textContent = `${stats.distanceKm.toFixed(2)} km`;
+    el.saveSummaryElev.textContent = `+${stats.elevGain}m / -${stats.elevLoss}m`;
 
-          el.saveModal.classList.remove('hidden');
-        });
+    el.saveModal.classList.remove('hidden');
+  });
 
-        document.querySelectorAll('input[name="save-name-option"]').forEach((radio) => {
-          radio.addEventListener('change', (e) => {
-            if (e.target.value === 'new') {
-              el.newNameInputGroup.classList.remove('hidden');
-              el.saveTrackNameInput.focus();
-              el.saveTrackNameInput.select();
-            } else {
-              el.newNameInputGroup.classList.add('hidden');
-            }
-          });
-        });
+  document.querySelectorAll('input[name="save-name-option"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'new') {
+        el.newNameInputGroup.classList.remove('hidden');
+        el.saveTrackNameInput.focus();
+        el.saveTrackNameInput.select();
+      } else {
+        el.newNameInputGroup.classList.add('hidden');
+      }
+    });
+  });
 
-        function closeSaveModal() {
-          el.saveModal.classList.add('hidden');
-        }
+  function closeSaveModal() {
+    el.saveModal.classList.add('hidden');
+  }
 
-        el.saveModalClose.addEventListener('click', closeSaveModal);
-        el.saveModalCancel.addEventListener('click', closeSaveModal);
+  el.saveModalClose.addEventListener('click', closeSaveModal);
+  el.saveModalCancel.addEventListener('click', closeSaveModal);
 
-        el.saveModalConfirm.addEventListener('click', () => {
-          const track = getActiveTrack();
-          if (!track) return;
+  el.saveModalConfirm.addEventListener('click', () => {
+    const track = getActiveTrack();
+    if (!track) return;
 
-          const modeChoice = document.querySelector('input[name="save-name-option"]:checked')?.value || 'same';
-          let chosenName = track.name;
+    const modeChoice = document.querySelector('input[name="save-name-option"]:checked')?.value || 'same';
+    let chosenName = track.name;
 
-          if (modeChoice === 'new') {
-            const typed = el.saveTrackNameInput.value.trim();
-            if (typed) {
-              chosenName = typed.replace(/\.gpx$/i, '');
-              track.name = chosenName;
-              updateTrackStatsAndUI(track.id, false);
-            }
-          }
+    if (modeChoice === 'new') {
+      const typed = el.saveTrackNameInput.value.trim();
+      if (typed) {
+        chosenName = typed.replace(/\.gpx$/i, '');
+        track.name = chosenName;
+        updateTrackStatsAndUI(track.id, false);
+      }
+    }
 
-          const gpxXml = buildGpxXml(track, chosenName);
-          const fileName = sanitizeFileName(chosenName) + '.gpx';
+    const gpxXml = buildGpxXml(track, chosenName);
+    const fileName = sanitizeFileName(chosenName) + '.gpx';
 
-          const blob = new Blob([gpxXml], { type: 'application/gpx+xml;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+    const blob = new Blob([gpxXml], { type: 'application/gpx+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-          closeSaveModal();
-        });
+    closeSaveModal();
+  });
 
-        function buildGpxXml(track, exportName) {
-          renumberTrackWaypoints(track);
-          const nowIso = new Date().toISOString();
-          const stats = computeTrackStats(track.waypoints);
-          const trkptsXml = track.waypoints
-            .map((wp, idx) => {
-              const wpName = wp.name || formatWaypointName(idx + 1);
-              const eleTag = typeof wp.ele === 'number' && !isNaN(wp.ele) ? `\n        <ele>${wp.ele.toFixed(1)}</ele>` : '';
-              return `      <trkpt lat="${wp.lat.toFixed(6)}" lon="${wp.lng.toFixed(6)}">${eleTag}\n        <name>${escapeXml(wpName)}</name>\n      </trkpt>`;
-            })
-            .join('\n');
+  function buildGpxXml(track, exportName) {
+    renumberTrackWaypoints(track);
+    const nowIso = new Date().toISOString();
+    const stats = computeTrackStats(track.waypoints);
+    const trkptsXml = track.waypoints
+      .map((wp, idx) => {
+        const wpName = wp.name || formatWaypointName(idx + 1);
+        const eleTag = typeof wp.ele === 'number' && !isNaN(wp.ele) ? `\n        <ele>${wp.ele.toFixed(1)}</ele>` : '';
+        return `      <trkpt lat="${wp.lat.toFixed(6)}" lon="${wp.lng.toFixed(6)}">${eleTag}\n        <name>${escapeXml(wpName)}</name>\n      </trkpt>`;
+      })
+      .join('\n');
 
-          return `<?xml version="1.0" encoding="UTF-8"?>
+    return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="MemoryMap Web" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <name>${escapeXml(exportName)}</name>
@@ -1912,30 +1912,30 @@ ${trkptsXml}
     </trkseg>
   </trk>
 </gpx>`;
-        }
+  }
 
-        function sanitizeFileName(name) {
-          return (name || 'track')
-            .replace(/\.gpx$/i, '')
-            .replace(/[^a-zA-Z0-9_\-\s.]/g, '')
-            .trim()
-            .replace(/\s+/g, '_') || 'track';
-        }
+  function sanitizeFileName(name) {
+    return (name || 'track')
+      .replace(/\.gpx$/i, '')
+      .replace(/[^a-zA-Z0-9_\-\s.]/g, '')
+      .trim()
+      .replace(/\s+/g, '_') || 'track';
+  }
 
-        function escapeHtml(str) {
-          return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-        }
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
-        function escapeXml(str) {
-          return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
-        }
-      })();
+  function escapeXml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+})();
