@@ -1,5 +1,5 @@
 /**
- * MemoryMap Web — OpenStreetMap & GPX Track Planner / Editor
+ * GPX Builder — OpenStreetMap & GPX Track Planner / Editor
  * Supports desktop & mobile browsers.
  */
 
@@ -30,7 +30,7 @@
   };
 
   // ==================== MAP INITIALIZATION & LAYERS ====================
-  // Default center: Lake District / Peak District UK (classic Memory-Map territory)
+  // Default center: UK
   const map = L.map('map', {
     center: [53.477, -3.025],
     zoom: 12,
@@ -216,7 +216,7 @@
       }
     }
     try {
-      localStorage.setItem('memorymap_theme', normalized);
+      localStorage.setItem('gpx_builder_theme', normalized);
     } catch (e) {
       // Ignore storage errors
     }
@@ -224,7 +224,7 @@
 
   let initialTheme = 'light';
   try {
-    const savedTheme = localStorage.getItem('memorymap_theme');
+    const savedTheme = localStorage.getItem('gpx_builder_theme');
     if (savedTheme === 'dark' || savedTheme === 'light') {
       initialTheme = savedTheme;
     }
@@ -1742,7 +1742,7 @@
   // Demo Track Loader for quick testing
   el.btnLoadSample.addEventListener('click', async () => {
     const sampleGpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="MemoryMap Web" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="GPX Builder" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
     <name>Catbells Lakeland Ridge Loop</name>
     <trkseg>
@@ -1846,7 +1846,7 @@
       .join('\n');
 
     return `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="MemoryMap Web" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<gpx version="1.1" creator="GPX Builder" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <name>${escapeXml(exportName)}</name>
     <desc>Distance: ${stats.distanceKm.toFixed(2)} km | Elevation Gain: +${stats.elevGain}m | Elevation Loss: -${stats.elevLoss}m</desc>

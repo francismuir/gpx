@@ -1,2 +1,3 @@
-# gpx
-Create and edit gpx files
+# GPX Builder (`gpx_builder`)
+Create and edit GPX files on OpenStreetMap.
+
