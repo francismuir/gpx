@@ -187,54 +187,6 @@
           </div>
         </section>
 
-        <!-- Map Layers Control Section -->
-        <section class="panel-section">
-          <div class="section-header">
-            <h2>OSM Layers &amp; Overlays</h2>
-          </div>
-          <div class="layers-control-group">
-            <div class="layer-group-label">Base Map Layer</div>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="osm" checked />
-              <span class="layer-name">OpenStreetMap Standard</span>
-            </label>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="cyclosm" />
-              <span class="layer-name">CyclOSM (Cycle Map Layer)</span>
-            </label>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="cyclemap" />
-              <span class="layer-name">Cycle Map</span>
-            </label>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="transport" />
-              <span class="layer-name">Transport Map</span>
-            </label>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="opentopo" />
-              <span class="layer-name">OpenTopoMap (Contours &amp; Relief)</span>
-            </label>
-            <label class="layer-option">
-              <input type="radio" name="base-layer" value="humanitarian" />
-              <span class="layer-name">OSM Humanitarian (HOT)</span>
-            </label>
-
-            <div class="layer-group-label" style="margin-top: 10px;">Switchable Overlay Layers</div>
-            <label class="layer-option">
-              <input type="checkbox" id="overlay-cycling" />
-              <span class="layer-name">Waymarked Cycling Routes</span>
-            </label>
-            <label class="layer-option">
-              <input type="checkbox" id="overlay-hiking" />
-              <span class="layer-name">Waymarked Hiking Trails</span>
-            </label>
-            <label class="layer-option">
-              <input type="checkbox" id="overlay-scaleGrid" />
-              <span class="layer-name">Lat/Lon Coordinate Grid</span>
-            </label>
-          </div>
-        </section>
-
         <!-- Selected Point Inspection Card -->
         <section class="panel-section">
           <div class="section-header">
@@ -254,11 +206,15 @@
           </div>
           <ul class="help-list">
             <li><strong>New Track:</strong> Click map to add waypoints. Semi-transparent line connects points. Press
-              <kbd>Esc</kbd> to finish.</li>
-            <li><strong>Click Track (Explore Mode):</strong> Offer to insert a waypoint (entering Edit Mode) or split the track into two tracks at that point.</li>
-            <li><strong>Click Track (Edit Mode):</strong> Automatically adds a waypoint at that point so you can drag it into position.</li>
+              <kbd>Esc</kbd> to finish.
+            </li>
+            <li><strong>Click Track (Explore Mode):</strong> Offer to insert a waypoint (entering Edit Mode) or split
+              the track into two tracks at that point.</li>
+            <li><strong>Click Track (Edit Mode):</strong> Automatically adds a waypoint at that point so you can drag it
+              into position.</li>
             <li><strong>Move Waypoint:</strong> Drag any waypoint marker to a new position.</li>
-            <li><strong>Extend Start/End:</strong> Click the first waypoint (WP0001) to prepend before, or the last waypoint to
+            <li><strong>Extend Start/End:</strong> Click the first waypoint (WP0001) to prepend before, or the last
+              waypoint to
               append after.</li>
             <li><strong>Delete Waypoint:</strong> Click a waypoint and choose <em>Delete Waypoint</em>.</li>
           </ul>

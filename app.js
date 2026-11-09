@@ -77,7 +77,7 @@
   };
 
   // Start with standard OSM layer
-  let currentBaseLayer = baseLayers.osm.addTo(map);
+  baseLayers.osm.addTo(map);
 
   // Switchable Overlays
   const overlayLayers = {
@@ -94,7 +94,7 @@
     scaleGrid: createCoordinateGridLayer()
   };
 
-  // Also add Leaflet's native layer switcher on top-right of map for convenience
+  // Leaflet layer switcher on top-right of map
   L.control.layers(
     {
       'OpenStreetMap Standard': baseLayers.osm,
@@ -111,59 +111,6 @@
     },
     { position: 'topright', collapsed: true }
   ).addTo(map);
-
-  // Sync sidebar layer controls with map layers
-  document.querySelectorAll('input[name="base-layer"]').forEach((radio) => {
-    radio.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (baseLayers[val]) {
-        map.removeLayer(currentBaseLayer);
-        currentBaseLayer = baseLayers[val].addTo(map);
-      }
-    });
-  });
-
-  map.on('baselayerchange', (e) => {
-    const mapKey = {
-      'OpenStreetMap Standard': 'osm',
-      'CyclOSM (Cycle Map)': 'cyclosm',
-      'Cycle Map': 'cyclemap',
-      'Transport Map': 'transport',
-      'OpenTopoMap (Topographic)': 'opentopo',
-      'OSM Humanitarian': 'humanitarian'
-    }[e.name];
-    if (mapKey) {
-      currentBaseLayer = baseLayers[mapKey];
-      const radio = document.querySelector(`input[name="base-layer"][value="${mapKey}"]`);
-      if (radio) radio.checked = true;
-    }
-  });
-
-  const bindOverlayCheckbox = (checkboxId, overlayKey) => {
-    const cb = document.getElementById(checkboxId);
-    if (!cb) return;
-    cb.addEventListener('change', () => {
-      if (cb.checked) {
-        overlayLayers[overlayKey].addTo(map);
-      } else {
-        map.removeLayer(overlayLayers[overlayKey]);
-      }
-    });
-  };
-  bindOverlayCheckbox('overlay-cycling', 'cycling');
-  bindOverlayCheckbox('overlay-hiking', 'hiking');
-  bindOverlayCheckbox('overlay-scaleGrid', 'scaleGrid');
-
-  map.on('overlayadd', (e) => {
-    if (e.name.includes('Cycling')) document.getElementById('overlay-cycling').checked = true;
-    if (e.name.includes('Hiking')) document.getElementById('overlay-hiking').checked = true;
-    if (e.name.includes('Grid')) document.getElementById('overlay-scaleGrid').checked = true;
-  });
-  map.on('overlayremove', (e) => {
-    if (e.name.includes('Cycling')) document.getElementById('overlay-cycling').checked = false;
-    if (e.name.includes('Hiking')) document.getElementById('overlay-hiking').checked = false;
-    if (e.name.includes('Grid')) document.getElementById('overlay-scaleGrid').checked = false;
-  });
 
   // Coordinate Grid Layer Generator
   function createCoordinateGridLayer() {
