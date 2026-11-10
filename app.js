@@ -171,6 +171,8 @@
     statElevLoss: document.getElementById('stat-elev-loss'),
     statElevRange: document.getElementById('stat-elev-range'),
     elevProfileContainer: document.getElementById('elevation-profile-container'),
+    elevPanelProgress: document.getElementById('elev-panel-progress'),
+    elevPanelError: document.getElementById('elev-panel-error'),
     elevCanvas: document.getElementById('elevation-canvas'),
     elevHoverReadout: document.getElementById('elev-hover-readout'),
     trackCount: document.getElementById('track-count'),
@@ -368,47 +370,237 @@
     };
   }
 
-  // ==================== ELEVATION API SERVICE (Open-Meteo DEM) ====================
-  /**
-   * Fetches elevations for waypoints missing `ele` (or a single waypoint that moved).
-   * Uses Open-Meteo Elevation API (CORS-enabled, fast, free, global 90m/30m DEM).
-   */
-  async function fetchElevationsForWaypoints(waypointsToFetch, trackId) {
-    if (!waypointsToFetch || waypointsToFetch.length === 0) return;
+  // ==================== ELEVATION SERVICE (AWS Terrarium DEM Tiles + Open-Meteo Fallback) ====================
+  const DEM_TILE_ZOOM = 13;
+  const terrariumTileCache = new Map(); // key "z/x/y" -> Promise<Uint8ClampedArray | null>
 
-    el.elevationStatus.textContent = 'Fetching DEM...';
+  function delayMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
-    // Chunk into batches of 80 coordinates per request
-    const chunkSize = 80;
-    for (let i = 0; i < waypointsToFetch.length; i += chunkSize) {
-      const chunk = waypointsToFetch.slice(i, i + chunkSize);
-      const lats = chunk.map((w) => w.lat.toFixed(6)).join(',');
-      const lngs = chunk.map((w) => w.lng.toFixed(6)).join(',');
+  function latLngToTileAndPixel(lat, lng, zoom = DEM_TILE_ZOOM) {
+    const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, Number(lat)));
+    const normalizedLng = ((((Number(lng) + 180) % 360) + 360) % 360) - 180;
+    const n = Math.pow(2, zoom);
+    const xFloat = ((normalizedLng + 180) / 360) * n;
+    const latRad = (clampedLat * Math.PI) / 180;
+    const yFloat = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
 
-      try {
-        const resp = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (Array.isArray(data.elevation)) {
-            chunk.forEach((wp, idx) => {
-              if (typeof data.elevation[idx] === 'number') {
-                wp.ele = Math.round(data.elevation[idx] * 10) / 10;
-              }
-            });
-          }
+    const tileX = Math.max(0, Math.min(n - 1, Math.floor(xFloat)));
+    const tileY = Math.max(0, Math.min(n - 1, Math.floor(yFloat)));
+    const pixelX = Math.max(0, Math.min(255, Math.floor((xFloat - tileX) * 256)));
+    const pixelY = Math.max(0, Math.min(255, Math.floor((yFloat - tileY) * 256)));
+
+    return { zoom, tileX, tileY, pixelX, pixelY, key: `${zoom}/${tileX}/${tileY}` };
+  }
+
+  function decodeTerrariumPixel(pixelData, pixelX, pixelY) {
+    if (!pixelData) return null;
+    const idx = (pixelY * 256 + pixelX) * 4;
+    const r = pixelData[idx];
+    const g = pixelData[idx + 1];
+    const b = pixelData[idx + 2];
+    const elev = r * 256 + g + b / 256 - 32768;
+    if (isNaN(elev) || elev < -500 || elev > 9000) return null;
+    return Math.round(elev * 10) / 10;
+  }
+
+  function fetchTerrariumTileOnce(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 256, 256);
+          const data = ctx.getImageData(0, 0, 256, 256).data;
+          resolve(data);
+        } catch (err) {
+          console.warn('Error decoding Terrarium tile canvas:', err);
+          resolve(null);
         }
-      } catch (err) {
-        console.warn('Elevation lookup warning:', err);
-      }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  async function loadTerrariumTileData(zoom, tileX, tileY) {
+    const key = `${zoom}/${tileX}/${tileY}`;
+    if (terrariumTileCache.has(key)) {
+      return terrariumTileCache.get(key);
     }
 
-    el.elevationStatus.textContent = 'Ready';
-    if (trackId) {
-      updateTrackStatsAndUI(trackId);
+    const tilePromise = (async () => {
+      const url = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${zoom}/${tileX}/${tileY}.png`;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        if (attempt > 1) {
+          await delayMs(attempt * 400);
+        }
+        const data = await fetchTerrariumTileOnce(url);
+        if (data) return data;
+      }
+      return null;
+    })();
+
+    terrariumTileCache.set(key, tilePromise);
+    const result = await tilePromise;
+    if (!result) {
+      terrariumTileCache.delete(key);
+    }
+    return result;
+  }
+
+  function updateOpenWaypointPopupIfNeeded(track) {
+    if (!track) return;
+    const popupElevEl = document.getElementById('active-wp-popup-elev');
+    if (!popupElevEl) return;
+    if (popupElevEl.dataset.trackId !== track.id) return;
+    const idx = parseInt(popupElevEl.dataset.wpIndex, 10);
+    const wp = track.waypoints[idx];
+    if (wp && typeof wp.ele === 'number' && !isNaN(wp.ele)) {
+      popupElevEl.textContent = `Elevation: ${wp.ele} m`;
     }
   }
 
-  async function fetchSinglePointElevation(lat, lng) {
+  /**
+   * Fetches elevations for waypoints missing `ele` (or a single waypoint that moved).
+   * Uses AWS Open Data Terrarium DEM tiles (scales to thousands of waypoints without API rate limits),
+   * with Open-Meteo fallback if a tile cannot be loaded.
+   */
+  async function fetchElevationsForWaypoints(waypointsToFetch, trackId) {
+    const pendingWps = (waypointsToFetch || []).filter(
+      (w) => w && (w.ele === null || typeof w.ele !== 'number' || isNaN(w.ele))
+    );
+    if (pendingWps.length === 0) return;
+
+    const initialTrack = getTrackById(trackId);
+    if (!initialTrack) return;
+
+    // Group waypoints by DEM tile so each 256x256 terrain tile is fetched only once
+    const tileGroupsMap = new Map();
+    pendingWps.forEach((wp) => {
+      const info = latLngToTileAndPixel(wp.lat, wp.lng, DEM_TILE_ZOOM);
+      if (!tileGroupsMap.has(info.key)) {
+        tileGroupsMap.set(info.key, {
+          zoom: info.zoom,
+          tileX: info.tileX,
+          tileY: info.tileY,
+          items: []
+        });
+      }
+      tileGroupsMap.get(info.key).items.push({
+        wp,
+        pixelX: info.pixelX,
+        pixelY: info.pixelY
+      });
+    });
+
+    const tileGroups = Array.from(tileGroupsMap.values());
+    const totalToFetch = pendingWps.length;
+    const totalTiles = tileGroups.length;
+
+    initialTrack.elevState.isFetching = true;
+    initialTrack.elevState.errorText = '';
+    let hadError = false;
+
+    for (let tileIdx = 0; tileIdx < totalTiles; tileIdx++) {
+      const currentTrack = getTrackById(trackId);
+      if (!currentTrack) return; // Track was deleted
+
+      const tileNum = tileIdx + 1;
+      const group = tileGroups[tileIdx];
+      const completedBefore = pendingWps.filter((w) => typeof w.ele === 'number' && !isNaN(w.ele)).length;
+      const pctBefore = Math.round((completedBefore / totalToFetch) * 100);
+
+      currentTrack.elevState.progressText =
+        `Fetching elevation data: terrain tile ${tileNum} of ${totalTiles} (${completedBefore} / ${totalToFetch} waypoints, ${pctBefore}%)...`;
+      if (state.activeTrackId === trackId) {
+        el.elevationStatus.textContent = `Fetching (${tileNum}/${totalTiles})`;
+        drawElevationProfile(currentTrack);
+      }
+
+      if (tileIdx > 0) {
+        await delayMs(35);
+        if (!getTrackById(trackId)) return;
+      }
+
+      const pixelData = await loadTerrariumTileData(group.zoom, group.tileX, group.tileY);
+      if (pixelData) {
+        group.items.forEach(({ wp, pixelX, pixelY }) => {
+          const elev = decodeTerrariumPixel(pixelData, pixelX, pixelY);
+          if (elev !== null) {
+            wp.ele = elev;
+          } else {
+            hadError = true;
+          }
+        });
+      } else {
+        // Fallback to Open-Meteo if the terrain tile could not be loaded
+        for (const { wp } of group.items) {
+          const fallbackElev = await fetchOpenMeteoSingleElevation(wp.lat, wp.lng);
+          if (fallbackElev !== null) {
+            wp.ele = fallbackElev;
+          } else {
+            hadError = true;
+          }
+        }
+      }
+
+      const trackAfterTile = getTrackById(trackId);
+      if (!trackAfterTile) return;
+
+      updateOpenWaypointPopupIfNeeded(trackAfterTile);
+
+      const completedAfter = pendingWps.filter((w) => typeof w.ele === 'number' && !isNaN(w.ele)).length;
+      const pctAfter = Math.round((completedAfter / totalToFetch) * 100);
+      trackAfterTile.elevState.progressText =
+        `Loaded terrain tile ${tileNum} of ${totalTiles} (${completedAfter} / ${totalToFetch} waypoints, ${pctAfter}%)`;
+
+      if (state.activeTrackId === trackId) {
+        updateTrackStatsAndUI(trackId, true);
+      } else {
+        trackAfterTile.stats = computeTrackStats(trackAfterTile.waypoints);
+        renderSidebarTrackList();
+      }
+    }
+
+    const finalTrack = getTrackById(trackId);
+    if (!finalTrack) return;
+
+    finalTrack.elevState.isFetching = false;
+    finalTrack.elevState.progressText = '';
+
+    const missingWaypoints = finalTrack.waypoints.filter(
+      (w) => w.ele === null || typeof w.ele !== 'number' || isNaN(w.ele)
+    );
+
+    if (missingWaypoints.length > 0 || hadError) {
+      finalTrack.elevState.errorText =
+        missingWaypoints.length > 0
+          ? `Elevation error: Could not retrieve elevation data for ${missingWaypoints.length} of ${finalTrack.waypoints.length} waypoint${missingWaypoints.length === 1 ? '' : 's'}.`
+          : 'Elevation error: There was an issue retrieving elevation data.';
+      if (state.activeTrackId === trackId) {
+        el.elevationStatus.textContent = 'Elev. Error';
+      }
+    } else {
+      finalTrack.elevState.errorText = '';
+      if (state.activeTrackId === trackId) {
+        el.elevationStatus.textContent = 'Ready';
+      }
+    }
+
+    if (state.activeTrackId === trackId) {
+      updateTrackStatsAndUI(trackId, true);
+    } else {
+      renderSidebarTrackList();
+    }
+  }
+
+  async function fetchOpenMeteoSingleElevation(lat, lng) {
     try {
       const resp = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}`);
       if (resp.ok) {
@@ -421,6 +613,20 @@
       // Ignore network errors
     }
     return null;
+  }
+
+  async function fetchSinglePointElevation(lat, lng) {
+    try {
+      const info = latLngToTileAndPixel(lat, lng, DEM_TILE_ZOOM);
+      const pixelData = await loadTerrariumTileData(info.zoom, info.tileX, info.tileY);
+      if (pixelData) {
+        const elev = decodeTerrariumPixel(pixelData, info.pixelX, info.pixelY);
+        if (elev !== null) return elev;
+      }
+    } catch (e) {
+      // Fall back to Open-Meteo
+    }
+    return fetchOpenMeteoSingleElevation(lat, lng);
   }
 
   // ==================== TRACK DATA MODEL & RENDERING ====================
@@ -448,7 +654,12 @@
       polyline: null,
       hitPolyline: null, // Wider invisible polyline for easier clicking on mobile/desktop
       markers: [],
-      stats: computeTrackStats(waypoints)
+      stats: computeTrackStats(waypoints),
+      elevState: {
+        isFetching: false,
+        progressText: '',
+        errorText: ''
+      }
     };
     renumberTrackWaypoints(track);
     return track;
@@ -776,6 +987,11 @@
       track.stats = computeTrackStats(track.waypoints);
       secondTrack.stats = computeTrackStats(secondTrack.waypoints);
       updateTrackStatsAndUI(state.activeTrackId);
+    } else {
+      const errMsg = 'Elevation error: Could not retrieve elevation data for the split waypoint.';
+      track.elevState.errorText = errMsg;
+      secondTrack.elevState.errorText = errMsg;
+      updateTrackStatsAndUI(state.activeTrackId);
     }
   }
 
@@ -858,7 +1074,7 @@
     else if (isFirst) badgeRole = 'Start Waypoint (First)';
     else if (isLast) badgeRole = 'End Waypoint (Last)';
 
-    const elevStr = typeof wp.ele === 'number' ? `${wp.ele} m` : 'Fetching...';
+    const elevStr = typeof wp.ele === 'number' && !isNaN(wp.ele) ? `${wp.ele} m` : 'Fetching...';
     const formattedCoords = formatLatLon5(wp.lat, wp.lng);
 
     const container = document.createElement('div');
@@ -871,7 +1087,7 @@
           <span>${formattedCoords}</span>
           <button type="button" class="copy-coords-btn" data-lat="${wp.lat}" data-lng="${wp.lng}" title="Copy coordinates">Copy</button>
         </div>
-        <div style="margin-top:3px;">Elevation: ${elevStr}</div>
+        <div id="active-wp-popup-elev" data-track-id="${track.id}" data-wp-index="${index}" style="margin-top:3px;">Elevation: ${elevStr}</div>
       </div>
       <div class="popup-detail">
         ${badgeRole} &bull; <em>Drag marker to move</em>
@@ -1420,6 +1636,16 @@
         ? `Min: ${track.stats.minElev}m | Max: ${track.stats.maxElev}m`
         : 'Min: — | Max: —';
 
+      if (track.elevState?.isFetching) {
+        if (!el.elevationStatus.textContent.startsWith('Fetching')) {
+          el.elevationStatus.textContent = 'Fetching...';
+        }
+      } else if (track.elevState?.errorText) {
+        el.elevationStatus.textContent = 'Elev. Error';
+      } else {
+        el.elevationStatus.textContent = 'Ready';
+      }
+
       el.btnSaveGpx.disabled = track.waypoints.length === 0;
 
       if (redrawProfile) {
@@ -1433,8 +1659,11 @@
       el.statElevGain.textContent = '+0';
       el.statElevLoss.textContent = '-0';
       el.statElevRange.textContent = 'Min: — | Max: —';
+      el.elevationStatus.textContent = 'Ready';
       el.btnSaveGpx.disabled = true;
       el.elevProfileContainer.classList.add('hidden');
+      if (el.elevPanelProgress) el.elevPanelProgress.classList.add('hidden');
+      if (el.elevPanelError) el.elevPanelError.classList.add('hidden');
     }
 
     renderSidebarTrackList();
@@ -1615,19 +1844,57 @@
 
   // ==================== ELEVATION SPARKLINE CANVAS ====================
   function drawElevationProfile(track) {
-    const validPts = track.waypoints.filter((w) => typeof w.ele === 'number');
-    if (validPts.length < 2) {
+    if (!track || track.waypoints.length === 0) {
+      el.elevProfileContainer.classList.add('hidden');
+      if (el.elevPanelProgress) el.elevPanelProgress.classList.add('hidden');
+      if (el.elevPanelError) el.elevPanelError.classList.add('hidden');
+      return;
+    }
+
+    const hasProgressMsg = Boolean(track.elevState?.isFetching && track.elevState?.progressText);
+    const hasErrorMsg = Boolean(track.elevState?.errorText);
+    const validPts = track.waypoints.filter((w) => typeof w.ele === 'number' && !isNaN(w.ele));
+
+    if (!hasProgressMsg && !hasErrorMsg && validPts.length < 2) {
       el.elevProfileContainer.classList.add('hidden');
       return;
     }
 
     el.elevProfileContainer.classList.remove('hidden');
+
+    if (el.elevPanelProgress) {
+      if (hasProgressMsg) {
+        el.elevPanelProgress.textContent = track.elevState.progressText;
+        el.elevPanelProgress.classList.remove('hidden');
+      } else {
+        el.elevPanelProgress.textContent = '';
+        el.elevPanelProgress.classList.add('hidden');
+      }
+    }
+
+    if (el.elevPanelError) {
+      if (hasErrorMsg) {
+        el.elevPanelError.textContent = track.elevState.errorText;
+        el.elevPanelError.classList.remove('hidden');
+      } else {
+        el.elevPanelError.textContent = '';
+        el.elevPanelError.classList.add('hidden');
+      }
+    }
+
     const canvas = el.elevCanvas;
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
 
     ctx.clearRect(0, 0, width, height);
+
+    if (validPts.length < 2) {
+      canvas.classList.add('hidden');
+      return;
+    }
+
+    canvas.classList.remove('hidden');
 
     let minE = Math.min(...validPts.map((p) => p.ele));
     let maxE = Math.max(...validPts.map((p) => p.ele));
@@ -1720,17 +1987,21 @@
       });
 
       const track = createTrackObject(trackName, waypoints);
+      if (missingElevWps.length > 0) {
+        track.elevState.isFetching = true;
+        track.elevState.progressText = `Preparing to fetch elevation data for ${missingElevWps.length} waypoints...`;
+      }
       state.tracks.push(track);
       state.activeTrackId = track.id;
 
-      // Render track, update stats, and move map view to show the whole track (Requirement #2, #3, #4)
+      // Immediately render all waypoints and included elevation data on the map
       setMode('idle', track.id);
-      renderTrackOnMap(track);
-      updateTrackStatsAndUI(track.id);
       fitTrackBounds(track);
 
-      // If any points in the GPX lacked <ele> tags, automatically fetch DEM elevations
+      // If any points in the GPX lacked <ele> tags, allow the browser to paint the waypoints first,
+      // then start loading DEM elevations in paced batches
       if (missingElevWps.length > 0) {
+        await delayMs(25);
         await fetchElevationsForWaypoints(missingElevWps, track.id);
       }
     } catch (err) {

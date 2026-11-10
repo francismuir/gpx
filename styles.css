@@ -620,6 +620,28 @@ body {
   margin-bottom: 4px;
 }
 
+.elev-panel-msg {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  padding: 6px 8px;
+  border-radius: 5px;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+}
+
+.elev-panel-progress {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--text-main);
+}
+
+.elev-panel-error {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: var(--danger);
+  font-weight: 600;
+}
+
 #elevation-canvas {
   width: 100%;
   height: 68px;
@@ -627,6 +649,10 @@ body {
   border-radius: 5px;
   background: var(--bg-canvas);
   cursor: crosshair;
+}
+
+#elevation-canvas.hidden {
+  display: none;
 }
 
 /* Track List */
