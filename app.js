@@ -1412,8 +1412,8 @@
       track.stats = computeTrackStats(track.waypoints);
       el.activeTrackName.textContent = track.name;
       el.activeTrackPts.textContent = `${track.waypoints.length} pts`;
-      el.statDistance.textContent = track.stats.distanceKm.toFixed(2);
-      el.statDistanceMi.textContent = `${track.stats.distanceMiles.toFixed(2)} mi`;
+      el.statDistance.textContent = track.stats.distanceMiles.toFixed(2);
+      el.statDistanceMi.textContent = `${track.stats.distanceKm.toFixed(2)} km`;
       el.statElevGain.textContent = `+${track.stats.elevGain}`;
       el.statElevLoss.textContent = `-${track.stats.elevLoss}`;
       el.statElevRange.textContent = track.stats.hasElev
@@ -1429,7 +1429,7 @@
       el.activeTrackName.textContent = 'No track selected';
       el.activeTrackPts.textContent = '0 pts';
       el.statDistance.textContent = '0.00';
-      el.statDistanceMi.textContent = '0.00 mi';
+      el.statDistanceMi.textContent = '0.00 km';
       el.statElevGain.textContent = '+0';
       el.statElevLoss.textContent = '-0';
       el.statElevRange.textContent = 'Min: — | Max: —';
@@ -1477,7 +1477,7 @@
                   <div class="track-item-title" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</div>
                 </div>
               `}
-              <div class="track-item-sub">${stats.distanceKm.toFixed(2)} km &bull; +${stats.elevGain}m / -${stats.elevLoss}m &bull; ${track.waypoints.length} pts</div>
+              <div class="track-item-sub">${stats.distanceMiles.toFixed(2)} mi &bull; +${stats.elevGain}m / -${stats.elevLoss}m &bull; ${track.waypoints.length} pts</div>
             </div>
           </div>
           <div class="track-item-actions">
