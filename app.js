@@ -1632,9 +1632,9 @@
       el.statDistanceMi.textContent = `${track.stats.distanceKm.toFixed(2)} km`;
       el.statElevGain.textContent = `+${track.stats.elevGain}`;
       el.statElevLoss.textContent = `-${track.stats.elevLoss}`;
-      el.statElevRange.textContent = track.stats.hasElev
-        ? `Min: ${track.stats.minElev}m | Max: ${track.stats.maxElev}m`
-        : 'Min: — | Max: —';
+      el.statElevRange.innerHTML = track.stats.hasElev
+        ? `Min: ${track.stats.minElev}m<br />Max: ${track.stats.maxElev}m`
+        : 'Min: —<br />Max: —';
 
       if (track.elevState?.isFetching) {
         if (!el.elevationStatus.textContent.startsWith('Fetching')) {
@@ -1658,7 +1658,7 @@
       el.statDistanceMi.textContent = '0.00 km';
       el.statElevGain.textContent = '+0';
       el.statElevLoss.textContent = '-0';
-      el.statElevRange.textContent = 'Min: — | Max: —';
+      el.statElevRange.innerHTML = 'Min: —<br />Max: —';
       el.elevationStatus.textContent = 'Ready';
       el.btnSaveGpx.disabled = true;
       el.elevProfileContainer.classList.add('hidden');
