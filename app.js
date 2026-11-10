@@ -22,6 +22,8 @@
     activeTrackId: null,
     renamingTrackId: null,
     movingWaypoint: null, // { trackId, index } when positioning a newly inserted waypoint in edit mode
+    selectedWaypoint: null, // { trackId, index } when a waypoint is selected via map click or elevation profile
+    inspectorRequestId: 0,
     nextTrackNumber: 1,
     inspectorMarker: null,
     searchMarker: null,
@@ -457,12 +459,20 @@
   function updateOpenWaypointPopupIfNeeded(track) {
     if (!track) return;
     const popupElevEl = document.getElementById('active-wp-popup-elev');
-    if (!popupElevEl) return;
-    if (popupElevEl.dataset.trackId !== track.id) return;
-    const idx = parseInt(popupElevEl.dataset.wpIndex, 10);
-    const wp = track.waypoints[idx];
-    if (wp && typeof wp.ele === 'number' && !isNaN(wp.ele)) {
-      popupElevEl.textContent = `Elevation: ${wp.ele} m`;
+    if (popupElevEl && popupElevEl.dataset.trackId === track.id) {
+      const idx = parseInt(popupElevEl.dataset.wpIndex, 10);
+      const wp = track.waypoints[idx];
+      if (wp && typeof wp.ele === 'number' && !isNaN(wp.ele)) {
+        popupElevEl.textContent = `Elevation: ${wp.ele} m`;
+      }
+    }
+    const inspElevEl = document.getElementById('insp-elev');
+    if (inspElevEl && inspElevEl.dataset.trackId === track.id) {
+      const idx = parseInt(inspElevEl.dataset.wpIndex, 10);
+      const wp = track.waypoints[idx];
+      if (wp && typeof wp.ele === 'number' && !isNaN(wp.ele)) {
+        inspElevEl.textContent = `${wp.ele} m (${Math.round(wp.ele * 3.28084)} ft)`;
+      }
     }
   }
 
@@ -760,6 +770,11 @@
         state.movingWaypoint.trackId === track.id &&
         state.movingWaypoint.index === index
       );
+      const isSelectedThisWp = Boolean(
+        state.selectedWaypoint &&
+        state.selectedWaypoint.trackId === track.id &&
+        state.selectedWaypoint.index === index
+      );
 
       let markerClass = 'wp-marker wp-mid';
       let size = isActive ? 12 : 10;
@@ -772,6 +787,9 @@
       } else if (isLast && track.waypoints.length > 1) {
         markerClass = 'wp-marker wp-end';
         size = 16;
+      }
+      if (isSelectedThisWp && !isMovingThisWp) {
+        markerClass += ' wp-selected';
       }
 
       const icon = L.divIcon({
@@ -811,12 +829,8 @@
           return;
         }
 
-        // Otherwise (in idle or editing mode), select this track in Edit Mode and show waypoint actions
-        if (state.activeTrackId !== track.id || state.mode === 'idle') {
-          enterEditMode(track.id);
-        }
-
-        openWaypointActionPopup(track, index, marker.getLatLng());
+        // Select this waypoint, update Clicked Point Inspector, highlight on elevation profile, and open popup
+        selectTrackWaypoint(track, index, { fromProfile: false });
       });
 
       // Drag waypoint to move location
@@ -834,8 +848,10 @@
         const newPos = e.target.getLatLng();
         track.waypoints[index].lat = newPos.lat;
         track.waypoints[index].lng = newPos.lng;
+        state.selectedWaypoint = { trackId: track.id, index };
         renderTrackOnMap(track);
         updateTrackStatsAndUI(track.id);
+        inspectSelectedWaypoint(track, index);
         // Re-fetch elevation for moved waypoint
         await fetchElevationsForWaypoints([track.waypoints[index]], track.id);
       });
@@ -909,6 +925,13 @@
         name: ''
       };
       track.waypoints.splice(newIndex, 0, newWp);
+      if (
+        state.selectedWaypoint &&
+        state.selectedWaypoint.trackId === track.id &&
+        state.selectedWaypoint.index >= newIndex
+      ) {
+        state.selectedWaypoint.index += 1;
+      }
       renumberTrackWaypoints(track);
       state.movingWaypoint = { trackId: track.id, index: newIndex };
 
@@ -1042,6 +1065,13 @@
       };
       track.showWaypoints = true;
       track.waypoints.splice(segIndex + 1, 0, newWp);
+      if (
+        state.selectedWaypoint &&
+        state.selectedWaypoint.trackId === track.id &&
+        state.selectedWaypoint.index >= segIndex + 1
+      ) {
+        state.selectedWaypoint.index += 1;
+      }
       renumberTrackWaypoints(track);
       enterEditMode(track.id);
       await fetchElevationsForWaypoints([newWp], track.id);
@@ -1136,6 +1166,14 @@
         map.closePopup(popup);
         track.waypoints.splice(index, 1);
         renumberTrackWaypoints(track);
+        if (state.selectedWaypoint && state.selectedWaypoint.trackId === track.id) {
+          if (state.selectedWaypoint.index === index) {
+            clearPointInspector();
+          } else if (state.selectedWaypoint.index > index) {
+            state.selectedWaypoint.index -= 1;
+            inspectSelectedWaypoint(track, state.selectedWaypoint.index);
+          }
+        }
         renderTrackOnMap(track);
         updateTrackStatsAndUI(track.id);
       });
@@ -1248,6 +1286,10 @@
     t.markers.forEach((m) => map.removeLayer(m));
     state.tracks.splice(idx, 1);
 
+    if (state.selectedWaypoint && state.selectedWaypoint.trackId === trackId) {
+      clearPointInspector();
+    }
+
     if (state.activeTrackId === trackId) {
       state.activeTrackId = state.tracks.length > 0 ? state.tracks[state.tracks.length - 1].id : null;
       setMode('idle', state.activeTrackId);
@@ -1345,6 +1387,9 @@
       activeTrack.waypoints.push(wp);
     } else if (state.mode === 'extending_before') {
       activeTrack.waypoints.unshift(wp);
+      if (state.selectedWaypoint && state.selectedWaypoint.trackId === activeTrack.id) {
+        state.selectedWaypoint.index += 1;
+      }
     } else {
       return;
     }
@@ -1411,10 +1456,144 @@
   el.btnFinishMode.addEventListener('click', finishCurrentMode);
   el.floatingBannerBtn.addEventListener('click', finishCurrentMode);
 
-  // ==================== POINT INSPECTOR (CLICK ANY POINT FOR INFO) ====================
-  async function inspectMapPoint(lat, lng) {
+  // ==================== POINT INSPECTOR (CLICK ANY POINT OR WAYPOINT FOR INFO) ====================
+  function clearPointInspector() {
+    state.inspectorRequestId += 1;
     if (state.inspectorMarker) {
       map.removeLayer(state.inspectorMarker);
+      state.inspectorMarker = null;
+    }
+    const hadSelectedWp = Boolean(state.selectedWaypoint);
+    const prevTrackId = state.selectedWaypoint?.trackId || null;
+    state.selectedWaypoint = null;
+
+    el.btnClearInspector.classList.add('hidden');
+    el.pointInspector.innerHTML = `<p class="empty-state-sm">Click any point on the map (when not drawing) to inspect its coordinates, elevation, and address.</p>`;
+
+    if (hadSelectedWp) {
+      map.closePopup();
+      const prevTrack = prevTrackId ? getTrackById(prevTrackId) : null;
+      if (prevTrack) {
+        renderTrackOnMap(prevTrack);
+      }
+      const activeTrack = getActiveTrack();
+      if (activeTrack) {
+        drawElevationProfile(activeTrack);
+      }
+    }
+  }
+
+  /**
+   * Selects a waypoint on `track` at `index`:
+   * - Clears any previous selection in the Clicked Point Inspector and populates it with this waypoint
+   * - Highlights the waypoint on the elevation profile graph and on the map
+   * - Enters Edit Mode on the track (if in Explore/Idle mode) and opens the standard waypoint popup
+   */
+  function selectTrackWaypoint(track, index, { fromProfile = false } = {}) {
+    if (!track || !track.waypoints[index]) return;
+
+    if (fromProfile) {
+      let visibilityChanged = false;
+      if (track.visible === false) {
+        track.visible = true;
+        visibilityChanged = true;
+      }
+      if (track.showWaypoints === false) {
+        track.showWaypoints = true;
+        visibilityChanged = true;
+      }
+      if (visibilityChanged) {
+        renderTrackOnMap(track);
+      }
+    }
+
+    state.selectedWaypoint = { trackId: track.id, index };
+
+    if (state.activeTrackId !== track.id || state.mode === 'idle') {
+      enterEditMode(track.id);
+    } else {
+      renderTrackOnMap(track);
+      updateTrackStatsAndUI(track.id);
+    }
+
+    const wp = track.waypoints[index];
+    const wpLatLng = L.latLng(wp.lat, wp.lng);
+
+    if (fromProfile && !map.getBounds().contains(wpLatLng)) {
+      map.panTo(wpLatLng);
+    }
+
+    inspectSelectedWaypoint(track, index);
+    openWaypointActionPopup(track, index, wpLatLng);
+  }
+
+  async function inspectSelectedWaypoint(track, index) {
+    if (!track || !track.waypoints[index]) return;
+
+    const reqId = ++state.inspectorRequestId;
+
+    if (state.inspectorMarker) {
+      map.removeLayer(state.inspectorMarker);
+      state.inspectorMarker = null;
+    }
+
+    el.btnClearInspector.classList.remove('hidden');
+
+    const wp = track.waypoints[index];
+    const wpName = wp.name || formatWaypointName(index + 1);
+    const total = track.waypoints.length;
+    const formattedCoords = formatLatLon5(wp.lat, wp.lng);
+    const hasEle = typeof wp.ele === 'number' && !isNaN(wp.ele);
+    const elevText = hasEle
+      ? `${wp.ele} m (${Math.round(wp.ele * 3.28084)} ft)`
+      : 'Fetching...';
+
+    el.pointInspector.innerHTML = `
+      <div class="inspector-grid">
+        <span class="inspector-key">Waypoint:</span>
+        <span class="inspector-val"><strong>${escapeHtml(wpName)}</strong> (${index + 1} of ${total})</span>
+        <span class="inspector-key">Lat, Lon:</span>
+        <span class="inspector-val coords-row">
+          <span>${formattedCoords}</span>
+          <button type="button" class="copy-coords-btn" data-lat="${wp.lat}" data-lng="${wp.lng}" title="Copy coordinates">Copy</button>
+        </span>
+        <span class="inspector-key">Elevation:</span>
+        <span class="inspector-val" id="insp-elev" data-track-id="${track.id}" data-wp-index="${index}">${elevText}</span>
+      </div>
+      <div class="inspector-address" id="insp-addr">Looking up OSM place info...</div>
+    `;
+
+    const placeData = await reverseGeocodeNominatim(wp.lat, wp.lng);
+    if (state.inspectorRequestId !== reqId) return;
+
+    const placeName = placeData?.display_name || 'Open area / Unnamed location';
+    const category = placeData?.type ? `${placeData.class || ''}: ${placeData.type}`.replace(/^:\s*/, '') : '';
+    const inspAddrEl = document.getElementById('insp-addr');
+    if (inspAddrEl) {
+      inspAddrEl.innerHTML = `
+        ${category ? `<strong style="color:#10b981;text-transform:capitalize;">${escapeHtml(category)}</strong><br/>` : ''}
+        ${escapeHtml(placeName)}
+      `;
+    }
+  }
+
+  async function inspectMapPoint(lat, lng) {
+    const reqId = ++state.inspectorRequestId;
+
+    if (state.inspectorMarker) {
+      map.removeLayer(state.inspectorMarker);
+    }
+
+    if (state.selectedWaypoint) {
+      const prevTrack = getTrackById(state.selectedWaypoint.trackId);
+      state.selectedWaypoint = null;
+      if (prevTrack) {
+        renderTrackOnMap(prevTrack);
+      }
+      const activeTrack = getActiveTrack();
+      if (activeTrack) {
+        drawElevationProfile(activeTrack);
+      }
     }
 
     el.btnClearInspector.classList.remove('hidden');
@@ -1461,6 +1640,8 @@
       fetchSinglePointElevation(lat, lng),
       reverseGeocodeNominatim(lat, lng)
     ]);
+
+    if (state.inspectorRequestId !== reqId) return;
 
     const elevText = elev !== null ? `${elev} m (${Math.round(elev * 3.28084)} ft)` : 'N/A';
     const placeName = placeData?.display_name || 'Open area / Unnamed location';
@@ -1529,12 +1710,7 @@
   }
 
   el.btnClearInspector.addEventListener('click', () => {
-    if (state.inspectorMarker) {
-      map.removeLayer(state.inspectorMarker);
-      state.inspectorMarker = null;
-    }
-    el.btnClearInspector.classList.add('hidden');
-    el.pointInspector.innerHTML = `<p class="empty-state-sm">Click any point on the map (when not drawing) to inspect its coordinates, elevation, and address.</p>`;
+    clearPointInspector();
   });
 
   // ==================== SEARCH PLACES & POIs (NOMINATIM) ====================
@@ -1848,6 +2024,7 @@
       el.elevProfileContainer.classList.add('hidden');
       if (el.elevPanelProgress) el.elevPanelProgress.classList.add('hidden');
       if (el.elevPanelError) el.elevPanelError.classList.add('hidden');
+      if (el.elevHoverReadout) el.elevHoverReadout.textContent = '';
       return;
     }
 
@@ -1857,10 +2034,30 @@
 
     if (!hasProgressMsg && !hasErrorMsg && validPts.length < 2) {
       el.elevProfileContainer.classList.add('hidden');
+      if (el.elevHoverReadout) el.elevHoverReadout.textContent = '';
       return;
     }
 
     el.elevProfileContainer.classList.remove('hidden');
+
+    // Update selected waypoint readout in the elevation profile header
+    const hasSelectedOnTrack = Boolean(
+      state.selectedWaypoint &&
+      state.selectedWaypoint.trackId === track.id &&
+      track.waypoints[state.selectedWaypoint.index]
+    );
+    if (el.elevHoverReadout) {
+      if (hasSelectedOnTrack) {
+        const selIdx = state.selectedWaypoint.index;
+        const selWp = track.waypoints[selIdx];
+        const selName = selWp.name || formatWaypointName(selIdx + 1);
+        const selElevStr =
+          typeof selWp.ele === 'number' && !isNaN(selWp.ele) ? `${selWp.ele} m` : 'Fetching...';
+        el.elevHoverReadout.textContent = `${selName} • ${selElevStr}`;
+      } else {
+        el.elevHoverReadout.textContent = '';
+      }
+    }
 
     if (el.elevPanelProgress) {
       if (hasProgressMsg) {
@@ -1906,13 +2103,25 @@
     const padTop = 8;
     const padBot = 8;
     const plotH = height - padTop - padBot;
+    const totalWps = track.waypoints.length;
+
+    let firstX = 0;
+    let lastX = width;
+    let started = false;
 
     ctx.beginPath();
-    validPts.forEach((pt, i) => {
-      const x = (i / (validPts.length - 1)) * width;
+    track.waypoints.forEach((pt, idx) => {
+      if (typeof pt.ele !== 'number' || isNaN(pt.ele)) return;
+      const x = totalWps > 1 ? (idx / (totalWps - 1)) * width : width / 2;
       const y = padTop + plotH - ((pt.ele - minE) / (maxE - minE)) * plotH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (!started) {
+        firstX = x;
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+      lastX = x;
     });
 
     ctx.strokeStyle = '#10b981';
@@ -1920,14 +2129,66 @@
     ctx.stroke();
 
     // Fill gradient under curve
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
+    ctx.lineTo(lastX, height);
+    ctx.lineTo(firstX, height);
     ctx.closePath();
     const grad = ctx.createLinearGradient(0, 0, 0, height);
     grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
     grad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
     ctx.fillStyle = grad;
     ctx.fill();
+
+    // Draw indicator for the currently selected waypoint on this track
+    if (hasSelectedOnTrack) {
+      const selIdx = state.selectedWaypoint.index;
+      const selWp = track.waypoints[selIdx];
+      const rawX = totalWps > 1 ? (selIdx / (totalWps - 1)) * width : width / 2;
+      const selX = Math.max(5, Math.min(width - 5, rawX));
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(selX, 0);
+      ctx.lineTo(selX, height);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (typeof selWp.ele === 'number' && !isNaN(selWp.ele)) {
+        const selY = padTop + plotH - ((selWp.ele - minE) / (maxE - minE)) * plotH;
+
+        ctx.beginPath();
+        ctx.arc(selX, selY, 7, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(selX, selY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  if (el.elevCanvas) {
+    el.elevCanvas.addEventListener('click', (e) => {
+      const track = getActiveTrack();
+      if (!track || track.waypoints.length === 0) return;
+
+      const rect = el.elevCanvas.getBoundingClientRect();
+      if (!rect.width) return;
+
+      const clickX = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+      const closestIndex = Math.round(ratio * (track.waypoints.length - 1));
+
+      selectTrackWaypoint(track, closestIndex, { fromProfile: true });
+    });
   }
 
   // ==================== LOAD GPX FILE FROM FILESYSTEM ====================

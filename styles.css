@@ -616,9 +616,15 @@ body {
 .elev-profile-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 0.7rem;
   color: var(--text-muted);
   margin-bottom: 4px;
+}
+
+#elev-hover-readout {
+  color: var(--warning);
+  font-weight: 600;
 }
 
 .elev-panel-msg {
@@ -1144,6 +1150,11 @@ kbd {
   border-color: #ffffff;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.45), 0 2px 8px rgba(0, 0, 0, 0.55);
   pointer-events: none !important;
+}
+
+.wp-marker.wp-selected {
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.6), 0 2px 8px rgba(0, 0, 0, 0.65);
+  z-index: 650 !important;
 }
 
 /* ==================== MODAL DIALOG ==================== */
