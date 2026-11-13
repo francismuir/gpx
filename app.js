@@ -151,6 +151,7 @@
     btnLoadGpx: document.getElementById('btn-load-gpx'),
     gpxFileInput: document.getElementById('gpx-file-input'),
     btnSaveGpx: document.getElementById('btn-save-gpx'),
+    btnPrintMap: document.getElementById('btn-print-map'),
     btnThemeToggle: document.getElementById('btn-theme-toggle'),
     themeIconMoon: document.getElementById('theme-icon-moon'),
     themeIconSun: document.getElementById('theme-icon-sun'),
@@ -2376,6 +2377,35 @@
 
     closeSaveModal();
   });
+
+  // ==================== PRINT MAIN MAP WINDOW ====================
+  function updatePrintMapMetrics() {
+    if (!el.mapEl) return;
+    const rect = el.mapEl.getBoundingClientRect();
+    if (rect.width > 100 && rect.height > 100) {
+      const mapW = Math.round(rect.width);
+      const mapH = Math.round(rect.height);
+      const scaleLandscape = Math.min(960 / mapW, 670 / mapH, 1).toFixed(4);
+      const scalePortrait = Math.min(680 / mapW, 940 / mapH, 1).toFixed(4);
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty('--print-map-w', `${mapW}px`);
+      rootStyle.setProperty('--print-map-h', `${mapH}px`);
+      rootStyle.setProperty('--print-scale-landscape', scaleLandscape);
+      rootStyle.setProperty('--print-scale-portrait', scalePortrait);
+    }
+  }
+
+  function printMapWindow() {
+    updatePrintMapMetrics();
+    window.print();
+  }
+
+  updatePrintMapMetrics();
+  window.addEventListener('resize', updatePrintMapMetrics);
+  window.addEventListener('beforeprint', updatePrintMapMetrics);
+  if (el.btnPrintMap) {
+    el.btnPrintMap.addEventListener('click', printMapWindow);
+  }
 
   function buildGpxXml(track, exportName) {
     renumberTrackWaypoints(track);
