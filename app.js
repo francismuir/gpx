@@ -150,6 +150,7 @@
     btnNewTrack: document.getElementById('btn-new-track'),
     btnLoadGpx: document.getElementById('btn-load-gpx'),
     gpxFileInput: document.getElementById('gpx-file-input'),
+    gpxDropOverlay: document.getElementById('gpx-drop-overlay'),
     btnSaveGpx: document.getElementById('btn-save-gpx'),
     btnPrintMap: document.getElementById('btn-print-map'),
     btnThemeToggle: document.getElementById('btn-theme-toggle'),
@@ -1852,7 +1853,7 @@
     if (state.tracks.length === 0) {
       el.trackList.innerHTML = `
         <div class="empty-state">
-          No tracks yet. Click <strong>New Track</strong> to draw on the map or <strong>Load GPX</strong> to open a file.
+          No tracks yet. Click <strong>New Track</strong> to draw on the map, or click <strong>Load GPX</strong> / drag &amp; drop a <strong>.gpx</strong> file anywhere.
         </div>
       `;
       return;
@@ -2193,13 +2194,8 @@
   }
 
   // ==================== LOAD GPX FILE FROM FILESYSTEM ====================
-  el.btnLoadGpx.addEventListener('click', () => {
-    el.gpxFileInput.value = '';
-    el.gpxFileInput.click();
-  });
-
-  el.gpxFileInput.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files || []);
+  function loadGpxFiles(fileList) {
+    const files = Array.from(fileList || []);
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = async (ev) => {
@@ -2208,6 +2204,66 @@
       };
       reader.readAsText(file);
     });
+  }
+
+  el.btnLoadGpx.addEventListener('click', () => {
+    el.gpxFileInput.value = '';
+    el.gpxFileInput.click();
+  });
+
+  el.gpxFileInput.addEventListener('change', (e) => {
+    loadGpxFiles(e.target.files);
+  });
+
+  // Drag & Drop GPX loading anywhere on the app window
+  function isFileDragEvent(e) {
+    return Boolean(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
+  }
+
+  let fileDragDepth = 0;
+
+  window.addEventListener('dragenter', (e) => {
+    if (!isFileDragEvent(e)) return;
+    e.preventDefault();
+    fileDragDepth += 1;
+    if (el.gpxDropOverlay) {
+      el.gpxDropOverlay.classList.remove('hidden');
+    }
+  });
+
+  window.addEventListener('dragover', (e) => {
+    if (!isFileDragEvent(e)) return;
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+    if (el.gpxDropOverlay) {
+      el.gpxDropOverlay.classList.remove('hidden');
+    }
+  });
+
+  window.addEventListener('dragleave', (e) => {
+    if (!isFileDragEvent(e)) return;
+    e.preventDefault();
+    fileDragDepth = Math.max(0, fileDragDepth - 1);
+    if (fileDragDepth === 0 || !e.relatedTarget) {
+      fileDragDepth = 0;
+      if (el.gpxDropOverlay) {
+        el.gpxDropOverlay.classList.add('hidden');
+      }
+    }
+  });
+
+  window.addEventListener('drop', (e) => {
+    if (!isFileDragEvent(e)) return;
+    e.preventDefault();
+    fileDragDepth = 0;
+    if (el.gpxDropOverlay) {
+      el.gpxDropOverlay.classList.add('hidden');
+    }
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      loadGpxFiles(e.dataTransfer.files);
+    }
   });
 
   async function parseAndLoadGpxString(xmlString, fallbackName) {

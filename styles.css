@@ -1275,6 +1275,44 @@ kbd {
   gap: 8px;
 }
 
+/* Drag & Drop GPX Overlay */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  background: var(--bg-backdrop);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.drop-overlay-card {
+  background: var(--bg-panel);
+  border: 2px dashed var(--primary);
+  border-radius: 16px;
+  padding: 32px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  box-shadow: var(--shadow-popup);
+}
+
+.drop-overlay-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.drop-overlay-sub {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
 /* ==================== RESPONSIVE (MOBILE & TABLET) ==================== */
 .mobile-only {
   display: none;
@@ -1345,6 +1383,7 @@ kbd {
   .map-floating-banner,
   .map-coord-bar,
   .modal-backdrop,
+  .drop-overlay,
   .leaflet-control-zoom,
   .leaflet-control-layers,
   .copy-coords-btn {

@@ -193,8 +193,8 @@
           </div>
           <div id="track-list" class="track-list">
             <div class="empty-state">
-              No tracks yet. Click <strong>New Track</strong> to draw on the map or <strong>Load GPX</strong> to open a
-              file.
+              No tracks yet. Click <strong>New Track</strong> to draw on the map, or click <strong>Load GPX</strong> /
+              drag &amp; drop a <strong>.gpx</strong> file anywhere.
             </div>
           </div>
         </section>
@@ -295,6 +295,20 @@
           <button id="save-modal-cancel" class="btn btn-secondary">Cancel</button>
           <button id="save-modal-confirm" class="btn btn-accent">Download .GPX File</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Drag & Drop GPX Overlay -->
+    <div id="gpx-drop-overlay" class="drop-overlay hidden" aria-hidden="true">
+      <div class="drop-overlay-card">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <div class="drop-overlay-title">Drop GPX File(s) Here to Load</div>
+        <div class="drop-overlay-sub">Release to import one or more .gpx tracks onto the map</div>
       </div>
     </div>
   </div>
