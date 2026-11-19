@@ -262,7 +262,7 @@ body {
 .toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -280,6 +280,14 @@ body {
   border: 1px solid transparent;
   transition: all 0.15s ease;
   white-space: nowrap;
+}
+
+.btn-icon-tool {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .btn:disabled {
@@ -1328,14 +1336,15 @@ kbd {
 
 /* ==================== GPX XML VIEWER & EDITOR PANEL ==================== */
 .gpx-xml-panel {
-  width: 440px;
-  max-width: 46vw;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
   background: var(--bg-panel);
-  border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  z-index: 900;
+  z-index: 850;
   overflow: hidden;
 }
 
@@ -1508,16 +1517,6 @@ kbd {
 
   .sidebar.open {
     transform: translateX(0);
-  }
-
-  .gpx-xml-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 360px;
-    max-width: 92vw;
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
   }
 }
 

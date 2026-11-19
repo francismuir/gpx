@@ -58,61 +58,56 @@
 
       <!-- Primary Toolbar Buttons -->
       <div class="toolbar-actions">
-        <button id="btn-new-track" class="btn btn-primary" title="Create a new GPX track">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          <span>New Track</span>
-        </button>
-
-        <button id="btn-load-gpx" class="btn btn-secondary" title="Load existing GPX file from filesystem">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          <span>Load GPX</span>
-        </button>
-        <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml,text/xml" class="hidden" multiple />
-
-        <button id="btn-save-gpx" class="btn btn-accent" disabled title="Save active track in GPX format">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-            <polyline points="17 21 17 13 7 13 7 21" />
-            <polyline points="7 3 7 8 15 8" />
-          </svg>
-          <span>Save GPX</span>
-        </button>
-
-        <button id="btn-gpx-view" class="btn btn-secondary" type="button" title="Toggle GPX XML Viewer &amp; Editor for the selected track" aria-expanded="false">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <button id="btn-gpx-view" class="btn btn-secondary" type="button" title="Switch to GPX XML View" aria-expanded="false">
+          <svg id="gpx-view-icon-code" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
           </svg>
-          <span>GPX View</span>
+          <svg id="gpx-view-icon-map" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+          <span id="gpx-view-btn-label">GPX View</span>
         </button>
 
-        <button id="btn-print-map" class="btn btn-secondary" type="button" title="Print the main map view including tracks">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <button id="btn-load-gpx" class="btn btn-secondary btn-icon-tool" type="button" title="Open / Load GPX file" aria-label="Load GPX file">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </button>
+        <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml,text/xml" class="hidden" multiple />
+
+        <button id="btn-save-gpx" class="btn btn-accent btn-icon-tool" type="button" disabled title="Save active track as GPX" aria-label="Save GPX file">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+        </button>
+
+        <button id="btn-print-map" class="btn btn-secondary btn-icon-tool" type="button" title="Print map view" aria-label="Print map">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 6 2 18 2 18 9"></polyline>
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
             <rect x="6" y="14" width="12" height="8"></rect>
           </svg>
-          <span>Print Map</span>
         </button>
 
-        <button id="btn-theme-toggle" class="btn btn-secondary theme-toggle-btn" type="button"
-          title="Switch between Light and Dark mode" aria-label="Toggle Light/Dark Mode">
+        <button id="btn-theme-toggle" class="btn btn-secondary btn-icon-tool theme-toggle-btn" type="button"
+          title="Switch to Dark Mode" aria-label="Toggle Light/Dark Mode">
           <!-- Moon icon shown when in Light Mode (click to switch to Dark) -->
-          <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <svg id="theme-icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
           <!-- Sun icon shown when in Dark Mode (click to switch to Light) -->
-          <svg id="theme-icon-sun" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          <svg id="theme-icon-sun" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -124,7 +119,6 @@
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
-          <span id="theme-toggle-label">Dark</span>
         </button>
       </div>
     </header>
@@ -202,7 +196,7 @@
           </div>
           <div id="track-list" class="track-list">
             <div class="empty-state">
-              No tracks yet. Click <strong>New Track</strong> to draw on the map, or click <strong>Load GPX</strong> /
+              No tracks yet. Click any blank point on the map to start a new track, or click <strong>Load GPX</strong> /
               drag &amp; drop a <strong>.gpx</strong> file anywhere.
             </div>
           </div>
@@ -226,7 +220,7 @@
             <h2>Shortcuts &amp; Editing Guide</h2>
           </div>
           <ul class="help-list">
-            <li><strong>New Track:</strong> Click map to add waypoints. Semi-transparent line connects points. Press
+            <li><strong>New Track:</strong> Click a blank point on the map and choose <em>Start New Track Here</em>, then click to add waypoints. Press
               <kbd>Esc</kbd> to finish.
             </li>
             <li><strong>Click Track (Explore Mode):</strong> Offer to insert a waypoint (entering Edit Mode) or split
@@ -258,50 +252,50 @@
           <button id="copy-cursor-coords-btn" class="copy-coords-btn hidden" type="button"
             title="Copy coordinates to clipboard">Copy</button>
         </div>
+
+        <!-- GPX XML Viewer & Editor Panel (full map screen) -->
+        <aside id="gpx-xml-panel" class="gpx-xml-panel hidden" aria-label="GPX XML Viewer and Editor">
+          <div class="gpx-xml-header">
+            <div class="gpx-xml-title-wrap">
+              <h3>GPX XML View</h3>
+              <span id="gpx-xml-track-badge" class="badge">No track selected</span>
+            </div>
+            <button id="btn-close-gpx-view" class="icon-btn" type="button" title="Switch to Map View" aria-label="Close GPX View">&times;</button>
+          </div>
+
+          <div class="gpx-xml-toolbar">
+            <button id="btn-copy-gpx-xml" class="btn btn-sm btn-secondary" type="button" disabled title="Copy GPX XML to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span id="copy-gpx-xml-label">Copy XML to Clipboard</span>
+            </button>
+
+            <div class="gpx-xml-edit-actions">
+              <button id="btn-reset-gpx-xml" class="btn btn-sm btn-secondary hidden" type="button" title="Discard unsaved XML edits and revert to map state">
+                Reset
+              </button>
+              <button id="btn-apply-gpx-xml" class="btn btn-sm btn-primary" type="button" disabled title="Apply edited GPX XML to the selected track on the map (Ctrl/Cmd+Enter)">
+                Apply to Map
+              </button>
+            </div>
+          </div>
+
+          <div id="gpx-xml-error" class="gpx-xml-error hidden" role="alert"></div>
+
+          <div class="gpx-xml-editor-wrap">
+            <textarea id="gpx-xml-textarea" class="gpx-xml-textarea" spellcheck="false" disabled
+              placeholder="Select or create a track on the map to view and edit its GPX XML..."></textarea>
+          </div>
+
+          <div class="gpx-xml-footer">
+            <span id="gpx-xml-status" class="gpx-xml-status">No active track</span>
+            <span class="gpx-xml-hint">Edit XML &amp; click <strong>Apply to Map</strong></span>
+          </div>
+        </aside>
       </main>
-
-      <!-- GPX XML Viewer & Editor Panel -->
-      <aside id="gpx-xml-panel" class="gpx-xml-panel hidden" aria-label="GPX XML Viewer and Editor">
-        <div class="gpx-xml-header">
-          <div class="gpx-xml-title-wrap">
-            <h3>GPX XML View</h3>
-            <span id="gpx-xml-track-badge" class="badge">No track selected</span>
-          </div>
-          <button id="btn-close-gpx-view" class="icon-btn" type="button" title="Close GPX View" aria-label="Close GPX View">&times;</button>
-        </div>
-
-        <div class="gpx-xml-toolbar">
-          <button id="btn-copy-gpx-xml" class="btn btn-sm btn-secondary" type="button" disabled title="Copy GPX XML to clipboard">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span id="copy-gpx-xml-label">Copy XML to Clipboard</span>
-          </button>
-
-          <div class="gpx-xml-edit-actions">
-            <button id="btn-reset-gpx-xml" class="btn btn-sm btn-secondary hidden" type="button" title="Discard unsaved XML edits and revert to map state">
-              Reset
-            </button>
-            <button id="btn-apply-gpx-xml" class="btn btn-sm btn-primary" type="button" disabled title="Apply edited GPX XML to the selected track on the map (Ctrl/Cmd+Enter)">
-              Apply to Map
-            </button>
-          </div>
-        </div>
-
-        <div id="gpx-xml-error" class="gpx-xml-error hidden" role="alert"></div>
-
-        <div class="gpx-xml-editor-wrap">
-          <textarea id="gpx-xml-textarea" class="gpx-xml-textarea" spellcheck="false" disabled
-            placeholder="Select or create a track on the map to view and edit its GPX XML..."></textarea>
-        </div>
-
-        <div class="gpx-xml-footer">
-          <span id="gpx-xml-status" class="gpx-xml-status">No active track</span>
-          <span class="gpx-xml-hint">Edit XML &amp; click <strong>Apply to Map</strong></span>
-        </div>
-      </aside>
     </div>
 
     <!-- Save GPX Modal Dialog -->

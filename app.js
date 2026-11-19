@@ -153,6 +153,9 @@
     gpxDropOverlay: document.getElementById('gpx-drop-overlay'),
     btnSaveGpx: document.getElementById('btn-save-gpx'),
     btnGpxView: document.getElementById('btn-gpx-view'),
+    gpxViewBtnLabel: document.getElementById('gpx-view-btn-label'),
+    gpxViewIconCode: document.getElementById('gpx-view-icon-code'),
+    gpxViewIconMap: document.getElementById('gpx-view-icon-map'),
     btnPrintMap: document.getElementById('btn-print-map'),
     // GPX XML Panel
     gpxXmlPanel: document.getElementById('gpx-xml-panel'),
@@ -220,17 +223,17 @@
   function applyTheme(theme) {
     const normalized = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', normalized);
-    if (el.themeIconMoon && el.themeIconSun && el.themeToggleLabel) {
+    if (el.themeIconMoon && el.themeIconSun) {
       if (normalized === 'light') {
         el.themeIconMoon.classList.remove('hidden');
         el.themeIconSun.classList.add('hidden');
-        el.themeToggleLabel.textContent = 'Dark';
-        el.btnThemeToggle.title = 'Switch to Dark Mode';
+        if (el.themeToggleLabel) el.themeToggleLabel.textContent = 'Dark';
+        if (el.btnThemeToggle) el.btnThemeToggle.title = 'Switch to Dark Mode';
       } else {
         el.themeIconMoon.classList.add('hidden');
         el.themeIconSun.classList.remove('hidden');
-        el.themeToggleLabel.textContent = 'Light';
-        el.btnThemeToggle.title = 'Switch to Light Mode';
+        if (el.themeToggleLabel) el.themeToggleLabel.textContent = 'Light';
+        if (el.btnThemeToggle) el.btnThemeToggle.title = 'Switch to Light Mode';
       }
     }
     try {
@@ -1207,7 +1210,7 @@
 
     // Update UI classes
     el.modeBanner.className = 'mode-banner';
-    el.btnNewTrack.classList.remove('active-drawing');
+    if (el.btnNewTrack) el.btnNewTrack.classList.remove('active-drawing');
     el.mapEl.classList.remove('crosshair-cursor');
     el.floatingBanner.classList.add('hidden');
     el.modeActions.classList.add('hidden');
@@ -1218,7 +1221,7 @@
       el.modeDesc.innerHTML = 'Click any point on the map for coordinates, elevation &amp; place info, or click any track to edit.';
     } else if (newMode === 'creating') {
       el.modeBanner.classList.add('mode-creating');
-      el.btnNewTrack.classList.add('active-drawing');
+      if (el.btnNewTrack) el.btnNewTrack.classList.add('active-drawing');
       el.mapEl.classList.add('crosshair-cursor');
       el.modeTitle.textContent = `Creating: ${activeTrack ? activeTrack.name : 'Track'}`;
       el.modeDesc.innerHTML = 'Click anywhere on the map to add waypoints. Press <kbd>Esc</kbd> to finish creating.';
@@ -1459,13 +1462,15 @@
     }
   });
 
-  el.btnNewTrack.addEventListener('click', () => {
-    if (state.mode === 'creating') {
-      finishCurrentMode();
-    } else {
-      startNewTrack();
-    }
-  });
+  if (el.btnNewTrack) {
+    el.btnNewTrack.addEventListener('click', () => {
+      if (state.mode === 'creating') {
+        finishCurrentMode();
+      } else {
+        startNewTrack();
+      }
+    });
+  }
 
   el.btnFinishMode.addEventListener('click', finishCurrentMode);
   el.floatingBannerBtn.addEventListener('click', finishCurrentMode);
@@ -1866,7 +1871,7 @@
     if (state.tracks.length === 0) {
       el.trackList.innerHTML = `
         <div class="empty-state">
-          No tracks yet. Click <strong>New Track</strong> to draw on the map, or click <strong>Load GPX</strong> / drag &amp; drop a <strong>.gpx</strong> file anywhere.
+          No tracks yet. Click any blank point on the map to start a new track, or click <strong>Load GPX</strong> / drag &amp; drop a <strong>.gpx</strong> file anywhere.
         </div>
       `;
       return;
@@ -2548,6 +2553,16 @@
     if (el.btnGpxView) {
       el.btnGpxView.classList.toggle('active-toggle', shouldOpen);
       el.btnGpxView.setAttribute('aria-expanded', String(shouldOpen));
+      el.btnGpxView.title = shouldOpen ? 'Switch to Map View' : 'Switch to GPX XML View';
+    }
+    if (el.gpxViewBtnLabel) {
+      el.gpxViewBtnLabel.textContent = shouldOpen ? 'Map View' : 'GPX View';
+    }
+    if (el.gpxViewIconCode) {
+      el.gpxViewIconCode.classList.toggle('hidden', shouldOpen);
+    }
+    if (el.gpxViewIconMap) {
+      el.gpxViewIconMap.classList.toggle('hidden', !shouldOpen);
     }
 
     if (shouldOpen) {
