@@ -389,6 +389,42 @@
     };
   }
 
+  function computeWaypointTrackDistances(waypoints, targetIndex) {
+    let fromStartMeters = 0;
+    let fromEndMeters = 0;
+
+    if (Array.isArray(waypoints) && waypoints.length > 0 && targetIndex >= 0 && targetIndex < waypoints.length) {
+      for (let i = 1; i <= targetIndex; i++) {
+        fromStartMeters += haversineDistanceMeters(
+          waypoints[i - 1].lat,
+          waypoints[i - 1].lng,
+          waypoints[i].lat,
+          waypoints[i].lng
+        );
+      }
+      for (let i = targetIndex + 1; i < waypoints.length; i++) {
+        fromEndMeters += haversineDistanceMeters(
+          waypoints[i - 1].lat,
+          waypoints[i - 1].lng,
+          waypoints[i].lat,
+          waypoints[i].lng
+        );
+      }
+    }
+
+    const fromStartMiles = fromStartMeters / 1609.344;
+    const fromStartKm = fromStartMeters / 1000;
+    const fromEndMiles = fromEndMeters / 1609.344;
+    const fromEndKm = fromEndMeters / 1000;
+
+    return {
+      fromStartMeters,
+      fromEndMeters,
+      fromStartText: `${fromStartMiles.toFixed(2)} mi (${fromStartKm.toFixed(2)} km)`,
+      fromEndText: `${fromEndMiles.toFixed(2)} mi (${fromEndKm.toFixed(2)} km)`
+    };
+  }
+
   // ==================== ELEVATION SERVICE (AWS Terrarium DEM Tiles + Open-Meteo Fallback) ====================
   const DEM_TILE_ZOOM = 13;
   const terrariumTileCache = new Map(); // key "z/x/y" -> Promise<Uint8ClampedArray | null>
@@ -1123,6 +1159,7 @@
 
     const elevStr = typeof wp.ele === 'number' && !isNaN(wp.ele) ? `${wp.ele} m` : 'Fetching...';
     const formattedCoords = formatLatLon5(wp.lat, wp.lng);
+    const distInfo = computeWaypointTrackDistances(track.waypoints, index);
 
     const container = document.createElement('div');
     container.innerHTML = `
@@ -1135,6 +1172,8 @@
           <button type="button" class="copy-coords-btn" data-lat="${wp.lat}" data-lng="${wp.lng}" title="Copy coordinates">Copy</button>
         </div>
         <div id="active-wp-popup-elev" data-track-id="${track.id}" data-wp-index="${index}" style="margin-top:3px;">Elevation: ${elevStr}</div>
+        <div style="margin-top:3px;">From Start: ${distInfo.fromStartText}</div>
+        <div style="margin-top:2px;">From End: ${distInfo.fromEndText}</div>
       </div>
       <div class="popup-detail">
         ${badgeRole} &bull; <em>Drag marker to move</em>
@@ -1566,6 +1605,7 @@
     const elevText = hasEle
       ? `${wp.ele} m (${Math.round(wp.ele * 3.28084)} ft)`
       : 'Fetching...';
+    const distInfo = computeWaypointTrackDistances(track.waypoints, index);
 
     el.pointInspector.innerHTML = `
       <div class="inspector-grid">
@@ -1578,6 +1618,10 @@
         </span>
         <span class="inspector-key">Elevation:</span>
         <span class="inspector-val" id="insp-elev" data-track-id="${track.id}" data-wp-index="${index}">${elevText}</span>
+        <span class="inspector-key">From Start:</span>
+        <span class="inspector-val">${distInfo.fromStartText}</span>
+        <span class="inspector-key">From End:</span>
+        <span class="inspector-val">${distInfo.fromEndText}</span>
       </div>
       <div class="inspector-address" id="insp-addr">Looking up OSM place info...</div>
     `;
