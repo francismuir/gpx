@@ -325,6 +325,18 @@ body {
   background: var(--bg-hover);
 }
 
+.btn.active-toggle {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-secondary.copied {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--primary);
+  color: var(--copy-btn-copied-text);
+}
+
 .btn-accent {
   background: var(--accent);
   color: #fff;
@@ -892,6 +904,7 @@ kbd {
 /* ==================== MAP CONTAINER ==================== */
 .map-wrapper {
   flex: 1;
+  min-width: 0;
   position: relative;
   height: 100%;
   width: 100%;
@@ -1313,6 +1326,144 @@ kbd {
   color: var(--text-muted);
 }
 
+/* ==================== GPX XML VIEWER & EDITOR PANEL ==================== */
+.gpx-xml-panel {
+  width: 440px;
+  max-width: 46vw;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 900;
+  overflow: hidden;
+}
+
+.gpx-xml-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-mode-idle);
+}
+
+.gpx-xml-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.gpx-xml-title-wrap h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.gpx-xml-title-wrap .badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gpx-xml-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-dark);
+}
+
+.gpx-xml-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gpx-xml-error {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.14);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--danger);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.gpx-xml-editor-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 10px 12px;
+  background: var(--bg-panel);
+}
+
+.gpx-xml-textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.48;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+}
+
+.gpx-xml-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+}
+
+.gpx-xml-textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.gpx-xml-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-dark);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.gpx-xml-status {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.gpx-xml-status.dirty {
+  color: var(--warning);
+}
+
+.gpx-xml-status.error {
+  color: var(--danger);
+}
+
 /* ==================== RESPONSIVE (MOBILE & TABLET) ==================== */
 .mobile-only {
   display: none;
@@ -1358,6 +1509,16 @@ kbd {
   .sidebar.open {
     transform: translateX(0);
   }
+
+  .gpx-xml-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: 92vw;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* ==================== PRINT MAP STYLES ==================== */
@@ -1380,6 +1541,7 @@ kbd {
 
   .topbar,
   .sidebar,
+  .gpx-xml-panel,
   .map-floating-banner,
   .map-coord-bar,
   .modal-backdrop,

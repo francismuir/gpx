@@ -85,6 +85,15 @@
           <span>Save GPX</span>
         </button>
 
+        <button id="btn-gpx-view" class="btn btn-secondary" type="button" title="Toggle GPX XML Viewer &amp; Editor for the selected track" aria-expanded="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          <span>GPX View</span>
+        </button>
+
         <button id="btn-print-map" class="btn btn-secondary" type="button" title="Print the main map view including tracks">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -250,6 +259,49 @@
             title="Copy coordinates to clipboard">Copy</button>
         </div>
       </main>
+
+      <!-- GPX XML Viewer & Editor Panel -->
+      <aside id="gpx-xml-panel" class="gpx-xml-panel hidden" aria-label="GPX XML Viewer and Editor">
+        <div class="gpx-xml-header">
+          <div class="gpx-xml-title-wrap">
+            <h3>GPX XML View</h3>
+            <span id="gpx-xml-track-badge" class="badge">No track selected</span>
+          </div>
+          <button id="btn-close-gpx-view" class="icon-btn" type="button" title="Close GPX View" aria-label="Close GPX View">&times;</button>
+        </div>
+
+        <div class="gpx-xml-toolbar">
+          <button id="btn-copy-gpx-xml" class="btn btn-sm btn-secondary" type="button" disabled title="Copy GPX XML to clipboard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copy-gpx-xml-label">Copy XML to Clipboard</span>
+          </button>
+
+          <div class="gpx-xml-edit-actions">
+            <button id="btn-reset-gpx-xml" class="btn btn-sm btn-secondary hidden" type="button" title="Discard unsaved XML edits and revert to map state">
+              Reset
+            </button>
+            <button id="btn-apply-gpx-xml" class="btn btn-sm btn-primary" type="button" disabled title="Apply edited GPX XML to the selected track on the map (Ctrl/Cmd+Enter)">
+              Apply to Map
+            </button>
+          </div>
+        </div>
+
+        <div id="gpx-xml-error" class="gpx-xml-error hidden" role="alert"></div>
+
+        <div class="gpx-xml-editor-wrap">
+          <textarea id="gpx-xml-textarea" class="gpx-xml-textarea" spellcheck="false" disabled
+            placeholder="Select or create a track on the map to view and edit its GPX XML..."></textarea>
+        </div>
+
+        <div class="gpx-xml-footer">
+          <span id="gpx-xml-status" class="gpx-xml-status">No active track</span>
+          <span class="gpx-xml-hint">Edit XML &amp; click <strong>Apply to Map</strong></span>
+        </div>
+      </aside>
     </div>
 
     <!-- Save GPX Modal Dialog -->

@@ -152,7 +152,19 @@
     gpxFileInput: document.getElementById('gpx-file-input'),
     gpxDropOverlay: document.getElementById('gpx-drop-overlay'),
     btnSaveGpx: document.getElementById('btn-save-gpx'),
+    btnGpxView: document.getElementById('btn-gpx-view'),
     btnPrintMap: document.getElementById('btn-print-map'),
+    // GPX XML Panel
+    gpxXmlPanel: document.getElementById('gpx-xml-panel'),
+    btnCloseGpxView: document.getElementById('btn-close-gpx-view'),
+    gpxXmlTrackBadge: document.getElementById('gpx-xml-track-badge'),
+    btnCopyGpxXml: document.getElementById('btn-copy-gpx-xml'),
+    copyGpxXmlLabel: document.getElementById('copy-gpx-xml-label'),
+    btnResetGpxXml: document.getElementById('btn-reset-gpx-xml'),
+    btnApplyGpxXml: document.getElementById('btn-apply-gpx-xml'),
+    gpxXmlError: document.getElementById('gpx-xml-error'),
+    gpxXmlTextarea: document.getElementById('gpx-xml-textarea'),
+    gpxXmlStatus: document.getElementById('gpx-xml-status'),
     btnThemeToggle: document.getElementById('btn-theme-toggle'),
     themeIconMoon: document.getElementById('theme-icon-moon'),
     themeIconSun: document.getElementById('theme-icon-sun'),
@@ -1845,6 +1857,7 @@
     }
 
     renderSidebarTrackList();
+    refreshGpxXmlView();
   }
 
   function renderSidebarTrackList() {
@@ -2463,10 +2476,246 @@
     el.btnPrintMap.addEventListener('click', printMapWindow);
   }
 
+  // ==================== GPX XML VIEWER & EDITOR ====================
+  let gpxCopyResetTimer = null;
+
+  function setGpxXmlError(message) {
+    if (!el.gpxXmlError) return;
+    if (message) {
+      el.gpxXmlError.textContent = message;
+      el.gpxXmlError.classList.remove('hidden');
+    } else {
+      el.gpxXmlError.textContent = '';
+      el.gpxXmlError.classList.add('hidden');
+    }
+  }
+
+  function setGpxXmlStatus(text, tone = '') {
+    if (!el.gpxXmlStatus) return;
+    el.gpxXmlStatus.textContent = text;
+    el.gpxXmlStatus.classList.remove('dirty', 'error');
+    if (tone) {
+      el.gpxXmlStatus.classList.add(tone);
+    }
+  }
+
+  function refreshGpxXmlView(statusLabel = 'Synced with map') {
+    if (!el.gpxXmlPanel) return;
+
+    const track = getActiveTrack();
+    if (!track) {
+      if (el.gpxXmlTrackBadge) el.gpxXmlTrackBadge.textContent = 'No track selected';
+      if (el.gpxXmlTextarea) {
+        el.gpxXmlTextarea.value = '';
+        el.gpxXmlTextarea.disabled = true;
+      }
+      if (el.btnCopyGpxXml) el.btnCopyGpxXml.disabled = true;
+      if (el.btnApplyGpxXml) el.btnApplyGpxXml.disabled = true;
+      if (el.btnResetGpxXml) el.btnResetGpxXml.classList.add('hidden');
+      setGpxXmlError('');
+      setGpxXmlStatus('No active track');
+      return;
+    }
+
+    if (el.gpxXmlTrackBadge) {
+      el.gpxXmlTrackBadge.textContent = `${track.name} (${track.waypoints.length} pts)`;
+    }
+
+    // Avoid rebuilding full XML string while panel is hidden; toggleGpxXmlPanel calls refreshGpxXmlView when opened
+    if (el.gpxXmlPanel.classList.contains('hidden')) {
+      return;
+    }
+
+    if (el.gpxXmlTextarea) {
+      const prevScrollTop = el.gpxXmlTextarea.scrollTop;
+      el.gpxXmlTextarea.disabled = false;
+      el.gpxXmlTextarea.value = buildGpxXml(track, track.name);
+      el.gpxXmlTextarea.scrollTop = prevScrollTop;
+    }
+    if (el.btnCopyGpxXml) el.btnCopyGpxXml.disabled = false;
+    if (el.btnApplyGpxXml) el.btnApplyGpxXml.disabled = true;
+    if (el.btnResetGpxXml) el.btnResetGpxXml.classList.add('hidden');
+    setGpxXmlError('');
+    setGpxXmlStatus(statusLabel);
+  }
+
+  function toggleGpxXmlPanel(forceOpen) {
+    if (!el.gpxXmlPanel) return;
+    const isCurrentlyHidden = el.gpxXmlPanel.classList.contains('hidden');
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : isCurrentlyHidden;
+
+    el.gpxXmlPanel.classList.toggle('hidden', !shouldOpen);
+    if (el.btnGpxView) {
+      el.btnGpxView.classList.toggle('active-toggle', shouldOpen);
+      el.btnGpxView.setAttribute('aria-expanded', String(shouldOpen));
+    }
+
+    if (shouldOpen) {
+      refreshGpxXmlView();
+    }
+
+    requestAnimationFrame(() => {
+      map.invalidateSize({ animate: false });
+      updatePrintMapMetrics();
+    });
+  }
+
+  async function applyGpxXmlEdits() {
+    const track = getActiveTrack();
+    if (!track || !el.gpxXmlTextarea) return;
+
+    const rawXml = el.gpxXmlTextarea.value.trim();
+    if (!rawXml) {
+      setGpxXmlError('GPX XML cannot be empty.');
+      setGpxXmlStatus('Invalid XML', 'error');
+      return;
+    }
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(rawXml, 'text/xml');
+    if (xml.querySelector('parsererror')) {
+      setGpxXmlError('Invalid XML syntax. Please check for unclosed or malformed tags.');
+      setGpxXmlStatus('XML syntax error', 'error');
+      return;
+    }
+
+    const gpxRoot = xml.querySelector('gpx');
+    if (!gpxRoot) {
+      setGpxXmlError('Root <gpx> element is required.');
+      setGpxXmlStatus('Invalid GPX', 'error');
+      return;
+    }
+
+    const nameNode =
+      xml.querySelector('trk > name') ||
+      xml.querySelector('rte > name') ||
+      xml.querySelector('metadata > name');
+    const updatedName = nameNode && nameNode.textContent.trim() ? nameNode.textContent.trim() : track.name;
+
+    let ptNodes = Array.from(xml.querySelectorAll('trkpt'));
+    if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('rtept'));
+    if (ptNodes.length === 0) ptNodes = Array.from(xml.querySelectorAll('wpt'));
+
+    const parsedWaypoints = [];
+    const missingElevWps = [];
+
+    for (let i = 0; i < ptNodes.length; i++) {
+      const node = ptNodes[i];
+      const lat = parseFloat(node.getAttribute('lat'));
+      const lng = parseFloat(node.getAttribute('lon'));
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        setGpxXmlError(`Point #${i + 1} (${node.tagName}) must have valid lat (-90..90) and lon (-180..180) attributes.`);
+        setGpxXmlStatus('Invalid coordinates', 'error');
+        return;
+      }
+
+      const eleNode = node.querySelector('ele');
+      const eleRaw = eleNode ? parseFloat(eleNode.textContent) : NaN;
+      const wpNameNode = node.querySelector('name');
+      const wp = {
+        lat,
+        lng,
+        ele: !isNaN(eleRaw) ? Math.round(eleRaw * 10) / 10 : null,
+        name: wpNameNode ? wpNameNode.textContent.trim() : ''
+      };
+      if (wp.ele === null) missingElevWps.push(wp);
+      parsedWaypoints.push(wp);
+    }
+
+    track.name = updatedName;
+    track.waypoints = parsedWaypoints;
+    track.elevState.errorText = '';
+    renumberTrackWaypoints(track);
+
+    if (state.movingWaypoint && state.movingWaypoint.trackId === track.id) {
+      state.movingWaypoint = null;
+    }
+
+    if (state.selectedWaypoint && state.selectedWaypoint.trackId === track.id) {
+      if (track.waypoints.length === 0 || state.selectedWaypoint.index >= track.waypoints.length) {
+        clearPointInspector();
+      } else {
+        inspectSelectedWaypoint(track, state.selectedWaypoint.index);
+      }
+    }
+
+    renderTrackOnMap(track);
+    updateTrackStatsAndUI(track.id);
+    if (state.mode === 'editing' || state.mode === 'creating') {
+      setMode(state.mode, track.id);
+    }
+    refreshGpxXmlView('Applied to map');
+
+    if (missingElevWps.length > 0) {
+      await fetchElevationsForWaypoints(missingElevWps, track.id);
+    }
+  }
+
+  async function copyGpxXmlToClipboard() {
+    if (!el.gpxXmlTextarea || !el.gpxXmlTextarea.value) return;
+    const text = el.gpxXmlTextarea.value;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+
+      if (el.btnCopyGpxXml && el.copyGpxXmlLabel) {
+        clearTimeout(gpxCopyResetTimer);
+        el.btnCopyGpxXml.classList.add('copied');
+        el.copyGpxXmlLabel.textContent = 'Copied XML!';
+        gpxCopyResetTimer = setTimeout(() => {
+          el.btnCopyGpxXml.classList.remove('copied');
+          el.copyGpxXmlLabel.textContent = 'Copy XML to Clipboard';
+        }, 1500);
+      }
+    } catch (err) {
+      console.warn('Clipboard copy failed:', err);
+      setGpxXmlError('Could not copy to clipboard in this browser.');
+    }
+  }
+
+  if (el.btnGpxView) {
+    el.btnGpxView.addEventListener('click', () => toggleGpxXmlPanel());
+  }
+  if (el.btnCloseGpxView) {
+    el.btnCloseGpxView.addEventListener('click', () => toggleGpxXmlPanel(false));
+  }
+  if (el.btnCopyGpxXml) {
+    el.btnCopyGpxXml.addEventListener('click', copyGpxXmlToClipboard);
+  }
+  if (el.btnApplyGpxXml) {
+    el.btnApplyGpxXml.addEventListener('click', applyGpxXmlEdits);
+  }
+  if (el.btnResetGpxXml) {
+    el.btnResetGpxXml.addEventListener('click', () => refreshGpxXmlView('Reverted to map'));
+  }
+  if (el.gpxXmlTextarea) {
+    el.gpxXmlTextarea.addEventListener('input', () => {
+      if (!getActiveTrack()) return;
+      if (el.btnApplyGpxXml) el.btnApplyGpxXml.disabled = false;
+      if (el.btnResetGpxXml) el.btnResetGpxXml.classList.remove('hidden');
+      setGpxXmlError('');
+      setGpxXmlStatus('Unsaved XML edits', 'dirty');
+    });
+    el.gpxXmlTextarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        applyGpxXmlEdits();
+      }
+    });
+  }
+
   function buildGpxXml(track, exportName) {
     renumberTrackWaypoints(track);
-    const nowIso = new Date().toISOString();
-    const stats = computeTrackStats(track.waypoints);
     const trkptsXml = track.waypoints
       .map((wp, idx) => {
         const wpName = wp.name || formatWaypointName(idx + 1);
@@ -2477,11 +2726,6 @@
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPX Builder" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
-  <metadata>
-    <name>${escapeXml(exportName)}</name>
-    <desc>Distance: ${stats.distanceKm.toFixed(2)} km | Elevation Gain: +${stats.elevGain}m | Elevation Loss: -${stats.elevLoss}m</desc>
-    <time>${nowIso}</time>
-  </metadata>
   <trk>
     <name>${escapeXml(exportName)}</name>
     <trkseg>
