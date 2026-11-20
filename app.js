@@ -216,10 +216,53 @@
     saveSummaryElev: document.getElementById('save-summary-elev')
   };
 
-  // Mobile Sidebar Toggle
+  // Mobile Sidebar Toggle & Swipe-Left to Close
   el.sidebarToggle.addEventListener('click', () => {
     el.sidebar.classList.toggle('open');
   });
+
+  if (el.sidebar) {
+    let sidebarTouchStartX = 0;
+    let sidebarTouchStartY = 0;
+    let sidebarTouchCurrentX = 0;
+    let sidebarTouchCurrentY = 0;
+    let isSidebarTouchTracking = false;
+
+    el.sidebar.addEventListener('touchstart', (e) => {
+      if (!el.sidebar.classList.contains('open') || e.touches.length !== 1) {
+        isSidebarTouchTracking = false;
+        return;
+      }
+      const touch = e.touches[0];
+      sidebarTouchStartX = touch.clientX;
+      sidebarTouchStartY = touch.clientY;
+      sidebarTouchCurrentX = touch.clientX;
+      sidebarTouchCurrentY = touch.clientY;
+      isSidebarTouchTracking = true;
+    }, { passive: true });
+
+    el.sidebar.addEventListener('touchmove', (e) => {
+      if (!isSidebarTouchTracking || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      sidebarTouchCurrentX = touch.clientX;
+      sidebarTouchCurrentY = touch.clientY;
+    }, { passive: true });
+
+    el.sidebar.addEventListener('touchend', () => {
+      if (!isSidebarTouchTracking) return;
+      isSidebarTouchTracking = false;
+
+      const deltaX = sidebarTouchCurrentX - sidebarTouchStartX;
+      const deltaY = sidebarTouchCurrentY - sidebarTouchStartY;
+      if (deltaX < -45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        el.sidebar.classList.remove('open');
+      }
+    }, { passive: true });
+
+    el.sidebar.addEventListener('touchcancel', () => {
+      isSidebarTouchTracking = false;
+    }, { passive: true });
+  }
 
   // Theme Toggle (Light / Dark Mode, defaults to Light)
   function applyTheme(theme) {
@@ -1465,7 +1508,7 @@
       el.modeDesc.innerHTML = 'Drag waypoints to move, click a waypoint to delete or extend start/end, or click the line to insert a waypoint.';
       el.modeActions.classList.remove('hidden');
       el.floatingBanner.classList.remove('hidden');
-      el.floatingBannerText.textContent = `Editing ${activeTrack ? activeTrack.name : 'Track'}: Drag points, click line to insert, or click waypoint`;
+      el.floatingBannerText.textContent = `Editing ${activeTrack ? activeTrack.name : 'Track'}`;
     } else if (newMode === 'extending_after') {
       el.modeBanner.classList.add('mode-extending');
       el.mapEl.classList.add('crosshair-cursor');
