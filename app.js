@@ -28,7 +28,8 @@
     inspectorMarker: null,
     searchMarker: null,
     previewLine: null, // Rubber-band line while creating/extending
-    suppressNextMapClick: false
+    suppressNextMapClick: false,
+    undoStack: []
   };
 
   // ==================== MAP INITIALIZATION & LAYERS ====================
@@ -156,6 +157,7 @@
     gpxViewBtnLabel: document.getElementById('gpx-view-btn-label'),
     gpxViewIconCode: document.getElementById('gpx-view-icon-code'),
     gpxViewIconMap: document.getElementById('gpx-view-icon-map'),
+    btnUndo: document.getElementById('btn-undo'),
     btnPrintMap: document.getElementById('btn-print-map'),
     // GPX XML Panel
     gpxXmlPanel: document.getElementById('gpx-xml-panel'),
@@ -736,6 +738,122 @@
     return state.tracks.find((t) => t.id === id) || null;
   }
 
+  const MAX_UNDO_STEPS = 50;
+
+  function updateUndoButtonUI() {
+    if (!el.btnUndo) return;
+    const hasUndo = state.undoStack.length > 0;
+    el.btnUndo.disabled = !hasUndo;
+    if (hasUndo) {
+      const latest = state.undoStack[state.undoStack.length - 1];
+      el.btnUndo.title = `Undo ${latest.actionLabel} (Ctrl/Cmd+Z)`;
+    } else {
+      el.btnUndo.title = 'Nothing to undo (Ctrl/Cmd+Z)';
+    }
+  }
+
+  function pushUndoState(actionLabel = 'last action') {
+    const snapshot = {
+      actionLabel,
+      activeTrackId: state.activeTrackId,
+      mode: state.mode,
+      nextTrackNumber: state.nextTrackNumber,
+      selectedWaypoint: state.selectedWaypoint ? { ...state.selectedWaypoint } : null,
+      tracks: state.tracks.map((t) => ({
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        visible: t.visible,
+        showWaypoints: t.showWaypoints,
+        waypoints: t.waypoints.map((w) => ({
+          lat: w.lat,
+          lng: w.lng,
+          ele: w.ele,
+          name: w.name
+        }))
+      }))
+    };
+
+    state.undoStack.push(snapshot);
+    if (state.undoStack.length > MAX_UNDO_STEPS) {
+      state.undoStack.shift();
+    }
+    updateUndoButtonUI();
+  }
+
+  async function performUndo() {
+    if (state.undoStack.length === 0) return;
+
+    const snapshot = state.undoStack.pop();
+    updateUndoButtonUI();
+
+    map.closePopup();
+    state.movingWaypoint = null;
+
+    // Remove all existing Leaflet layers for current tracks
+    state.tracks.forEach((t) => {
+      if (t.polyline && map.hasLayer(t.polyline)) map.removeLayer(t.polyline);
+      if (t.hitPolyline && map.hasLayer(t.hitPolyline)) map.removeLayer(t.hitPolyline);
+      t.markers.forEach((m) => map.removeLayer(m));
+    });
+
+    const tracksNeedingElev = [];
+    state.tracks = snapshot.tracks.map((saved) => {
+      const waypoints = saved.waypoints.map((w) => ({
+        lat: w.lat,
+        lng: w.lng,
+        ele: w.ele,
+        name: w.name
+      }));
+      const restored = {
+        id: saved.id,
+        name: saved.name,
+        color: saved.color,
+        visible: saved.visible,
+        showWaypoints: saved.showWaypoints,
+        waypoints,
+        polyline: null,
+        hitPolyline: null,
+        markers: [],
+        stats: computeTrackStats(waypoints),
+        elevState: {
+          isFetching: false,
+          progressText: '',
+          errorText: ''
+        }
+      };
+      renumberTrackWaypoints(restored);
+      const missingWps = restored.waypoints.filter(
+        (w) => w.ele === null || typeof w.ele !== 'number' || isNaN(w.ele)
+      );
+      if (missingWps.length > 0) {
+        tracksNeedingElev.push({ trackId: restored.id, missingWps });
+      }
+      return restored;
+    });
+
+    state.activeTrackId = snapshot.activeTrackId;
+    state.nextTrackNumber = snapshot.nextTrackNumber;
+    state.selectedWaypoint = snapshot.selectedWaypoint ? { ...snapshot.selectedWaypoint } : null;
+
+    const restoredMode = snapshot.activeTrackId && getTrackById(snapshot.activeTrackId) ? snapshot.mode : 'idle';
+    setMode(restoredMode, snapshot.activeTrackId);
+
+    const selTrack = state.selectedWaypoint ? getTrackById(state.selectedWaypoint.trackId) : null;
+    if (selTrack && selTrack.waypoints[state.selectedWaypoint.index]) {
+      inspectSelectedWaypoint(selTrack, state.selectedWaypoint.index);
+    } else {
+      state.selectedWaypoint = null;
+      if (!state.inspectorMarker) {
+        clearPointInspector();
+      }
+    }
+
+    for (const item of tracksNeedingElev) {
+      await fetchElevationsForWaypoints(item.missingWps, item.trackId);
+    }
+  }
+
   function suppressMapClickThisTick() {
     state.suppressNextMapClick = true;
     setTimeout(() => {
@@ -887,6 +1005,10 @@
       });
 
       // Drag waypoint to move location
+      marker.on('dragstart', () => {
+        pushUndoState('move waypoint');
+      });
+
       marker.on('drag', (e) => {
         const newPos = e.target.getLatLng();
         track.waypoints[index].lat = newPos.lat;
@@ -966,6 +1088,7 @@
     // and keep it selected so the user can move it to a new position, then click again to drop it.
     if (state.mode === 'editing') {
       map.closePopup();
+      pushUndoState('insert waypoint');
       if (state.activeTrackId !== track.id) {
         state.activeTrackId = track.id;
       }
@@ -1008,6 +1131,8 @@
   async function splitTrackAtSegment(track, segIndex, clickLatLng) {
     const trackIdx = state.tracks.findIndex((t) => t.id === track.id);
     if (trackIdx === -1 || track.waypoints.length < 2) return;
+
+    pushUndoState('split track');
 
     const splitLat = clickLatLng.lat;
     const splitLng = clickLatLng.lng;
@@ -1078,6 +1203,8 @@
   async function splitTrackAtWaypoint(track, wpIndex) {
     const trackIdx = state.tracks.findIndex((t) => t.id === track.id);
     if (trackIdx === -1 || wpIndex <= 0 || wpIndex >= track.waypoints.length - 1) return;
+
+    pushUndoState('split track');
 
     const baseName = track.name.replace(/\s*\(Part\s+\d+\)$/i, '');
 
@@ -1159,6 +1286,7 @@
     const insertBtn = container.querySelector('#popup-insert-between-btn');
     insertBtn.addEventListener('click', async () => {
       map.closePopup(popup);
+      pushUndoState('insert waypoint');
       const newWp = {
         lat: clickLatLng.lat,
         lng: clickLatLng.lng,
@@ -1283,6 +1411,7 @@
     if (deleteBtn) {
       deleteBtn.addEventListener('click', () => {
         map.closePopup(popup);
+        pushUndoState('delete waypoint');
         track.waypoints.splice(index, 1);
         renumberTrackWaypoints(track);
         if (state.selectedWaypoint && state.selectedWaypoint.trackId === track.id) {
@@ -1400,6 +1529,9 @@
     const idx = state.tracks.findIndex((t) => t.id === trackId);
     if (idx === -1) return;
     const t = state.tracks[idx];
+    if (t.waypoints.length > 0) {
+      pushUndoState('delete track');
+    }
     if (t.polyline) map.removeLayer(t.polyline);
     if (t.hitPolyline) map.removeLayer(t.hitPolyline);
     t.markers.forEach((m) => map.removeLayer(m));
@@ -1495,6 +1627,16 @@
     const activeTrack = getActiveTrack();
     if (!activeTrack) return;
 
+    if (
+      state.mode !== 'creating' &&
+      state.mode !== 'extending_after' &&
+      state.mode !== 'extending_before'
+    ) {
+      return;
+    }
+
+    pushUndoState('add waypoint');
+
     const hasValidEle = typeof existingEle === 'number' && !isNaN(existingEle);
     const wp = {
       lat,
@@ -1509,8 +1651,6 @@
       if (state.selectedWaypoint && state.selectedWaypoint.trackId === activeTrack.id) {
         state.selectedWaypoint.index += 1;
       }
-    } else {
-      return;
     }
 
     renderTrackOnMap(activeTrack);
@@ -1551,8 +1691,20 @@
     inspectMapPoint(lat, lng);
   });
 
-  // Escape key to finish track creation / extension / editing (Requirement #5)
+  // Escape key to finish track creation / extension / editing, Ctrl/Cmd+Z to Undo
   window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      const target = e.target;
+      const isEditable =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (!isEditable) {
+        e.preventDefault();
+        performUndo();
+        return;
+      }
+    }
+
     if (e.key === 'Escape') {
       if (!el.saveModal.classList.contains('hidden')) {
         closeSaveModal();
@@ -1809,6 +1961,7 @@
       if (startBtn) {
         startBtn.addEventListener('click', () => {
           map.closePopup();
+          pushUndoState('start new track');
           startNewTrack();
           const active = getActiveTrack();
           const wp = { lat, lng, ele: elev };
@@ -2042,7 +2195,8 @@
 
           const commitRename = () => {
             const newName = inputEl.value.trim();
-            if (newName) {
+            if (newName && newName !== track.name) {
+              pushUndoState('rename track');
               track.name = newName;
             }
             state.renamingTrackId = null;
@@ -2434,6 +2588,7 @@
         track.elevState.isFetching = true;
         track.elevState.progressText = `Preparing to fetch elevation data for ${missingElevWps.length} waypoints...`;
       }
+      pushUndoState('load GPX track');
       state.tracks.push(track);
       state.activeTrackId = track.id;
 
@@ -2744,6 +2899,8 @@
       parsedWaypoints.push(wp);
     }
 
+    pushUndoState('GPX XML edit');
+
     track.name = updatedName;
     track.waypoints = parsedWaypoints;
     track.elevState.errorText = '';
@@ -2807,6 +2964,9 @@
 
   if (el.btnGpxView) {
     el.btnGpxView.addEventListener('click', () => toggleGpxXmlPanel());
+  }
+  if (el.btnUndo) {
+    el.btnUndo.addEventListener('click', performUndo);
   }
   if (el.btnCloseGpxView) {
     el.btnCloseGpxView.addEventListener('click', () => toggleGpxXmlPanel(false));
