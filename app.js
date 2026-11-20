@@ -1072,6 +1072,55 @@
   }
 
   /**
+   * Splits a track into two tracks at an intermediate waypoint, duplicating the waypoint
+   * so Part 1 ends at it and Part 2 starts at it.
+   */
+  async function splitTrackAtWaypoint(track, wpIndex) {
+    const trackIdx = state.tracks.findIndex((t) => t.id === track.id);
+    if (trackIdx === -1 || wpIndex <= 0 || wpIndex >= track.waypoints.length - 1) return;
+
+    const baseName = track.name.replace(/\s*\(Part\s+\d+\)$/i, '');
+
+    const firstWaypoints = track.waypoints.slice(0, wpIndex + 1).map((w) => ({
+      lat: w.lat,
+      lng: w.lng,
+      ele: w.ele,
+      name: w.name
+    }));
+
+    const secondWaypoints = track.waypoints.slice(wpIndex).map((w) => ({
+      lat: w.lat,
+      lng: w.lng,
+      ele: w.ele,
+      name: w.name
+    }));
+
+    // Update original track as Part 1 ending at this waypoint
+    track.name = `${baseName} (Part 1)`;
+    track.waypoints = firstWaypoints;
+    renumberTrackWaypoints(track);
+    track.stats = computeTrackStats(track.waypoints);
+
+    // Create Part 2 track right after Part 1 starting with a duplicate of this waypoint
+    const secondTrack = createTrackObject(`${baseName} (Part 2)`, secondWaypoints);
+    renumberTrackWaypoints(secondTrack);
+    secondTrack.visible = track.visible;
+    secondTrack.showWaypoints = track.showWaypoints;
+    state.tracks.splice(trackIdx + 1, 0, secondTrack);
+
+    if (state.selectedWaypoint && state.selectedWaypoint.trackId === track.id) {
+      state.selectedWaypoint = { trackId: track.id, index: wpIndex };
+      inspectSelectedWaypoint(track, wpIndex);
+    }
+
+    state.activeTrackId = track.id;
+    setMode('idle', track.id);
+    renderTrackOnMap(track);
+    renderTrackOnMap(secondTrack);
+    updateTrackStatsAndUI(track.id);
+  }
+
+  /**
    * Opens popup when clicking on a line segment between two waypoints when not in edit mode (Requirement 2)
    */
   function openSegmentInsertPopup(track, segIndex, clickLatLng) {
@@ -1149,6 +1198,7 @@
 
     const isFirst = index === 0;
     const isLast = index === track.waypoints.length - 1;
+    const canSplitHere = !isFirst && !isLast;
     const total = track.waypoints.length;
     const wpName = wp.name || formatWaypointName(index + 1);
 
@@ -1189,6 +1239,11 @@
             + Add Waypoint After ${escapeHtml(wpName)} &rarr;
           </button>
         ` : ''}
+        ${canSplitHere ? `
+          <button type="button" class="popup-btn accent" id="popup-split-wp-btn">
+            &#9986; Split Track Here (${escapeHtml(wpName)})
+          </button>
+        ` : ''}
         <button type="button" class="popup-btn danger" id="popup-delete-wp-btn">
           Delete ${escapeHtml(wpName)}
         </button>
@@ -1213,6 +1268,14 @@
       addAfterBtn.addEventListener('click', () => {
         map.closePopup(popup);
         setMode('extending_after', track.id);
+      });
+    }
+
+    const splitWpBtn = container.querySelector('#popup-split-wp-btn');
+    if (splitWpBtn) {
+      splitWpBtn.addEventListener('click', async () => {
+        map.closePopup(popup);
+        await splitTrackAtWaypoint(track, index);
       });
     }
 
