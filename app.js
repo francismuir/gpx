@@ -311,6 +311,29 @@
     return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
   }
 
+  function buildGoogleMapsUrl(lat, lng) {
+    return `https://www.google.com/maps/search/?api=1&query=${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+  }
+
+  function buildGoogleStreetViewUrl(lat, lng) {
+    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+  }
+
+  function buildExternalMapLinksHtml(lat, lng) {
+    const gmapsUrl = buildGoogleMapsUrl(lat, lng);
+    const svUrl = buildGoogleStreetViewUrl(lat, lng);
+    return `
+      <div class="external-map-links">
+        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn external-map-btn" title="Open location in Google Maps in a new window">
+          Google Maps &#8599;
+        </a>
+        <a href="${svUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn external-map-btn" title="Open location in Google Street View in a new window">
+          Street View &#8599;
+        </a>
+      </div>
+    `;
+  }
+
   async function copyCoordinatesToClipboard(lat, lng, btnEl) {
     const formatted = formatLatLon5(lat, lng);
     try {
@@ -1318,6 +1341,7 @@
         <button type="button" class="popup-btn accent" id="popup-split-track-btn">
           &#9986; Split Track Here
         </button>
+        ${buildExternalMapLinksHtml(clickLatLng.lat, clickLatLng.lng)}
       </div>
     `;
 
@@ -1418,6 +1442,7 @@
         <button type="button" class="popup-btn danger" id="popup-delete-wp-btn">
           Delete ${escapeHtml(wpName)}
         </button>
+        ${buildExternalMapLinksHtml(wp.lat, wp.lng)}
       </div>
     `;
 
@@ -1888,6 +1913,7 @@
         <span class="inspector-val">${distInfo.fromEndText}</span>
       </div>
       <div class="inspector-address" id="insp-addr">Looking up OSM place info...</div>
+      ${buildExternalMapLinksHtml(wp.lat, wp.lng)}
     `;
 
     const placeData = await reverseGeocodeNominatim(wp.lat, wp.lng);
@@ -1945,6 +1971,9 @@
         </div>
       </div>
       <div class="popup-detail">Fetching elevation &amp; place details...</div>
+      <div class="popup-actions">
+        ${buildExternalMapLinksHtml(lat, lng)}
+      </div>
     `;
 
     state.inspectorMarker.bindPopup(initialHtml).openPopup();
@@ -1960,6 +1989,7 @@
         <span class="inspector-val" id="insp-elev">Loading...</span>
       </div>
       <div class="inspector-address" id="insp-addr">Looking up OSM place info...</div>
+      ${buildExternalMapLinksHtml(lat, lng)}
     `;
 
     // Fetch Elevation & Nominatim Reverse Geocode in parallel
@@ -2002,6 +2032,7 @@
         <div class="popup-detail">${escapeHtml(placeName)}</div>
         <div class="popup-actions">
           <button type="button" class="popup-btn primary" id="insp-start-track-here">Start New Track Here</button>
+          ${buildExternalMapLinksHtml(lat, lng)}
         </div>
       `;
 

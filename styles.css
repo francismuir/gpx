@@ -1138,6 +1138,24 @@ kbd {
   color: #fff;
 }
 
+.external-map-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.inspector-box .external-map-links {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+a.external-map-btn {
+  text-decoration: none !important;
+  color: var(--text-main) !important;
+}
+
 /* Custom Waypoint DivIcons */
 .wp-marker {
   border-radius: 50%;
