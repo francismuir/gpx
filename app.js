@@ -1734,8 +1734,14 @@
     inspectMapPoint(lat, lng);
   });
 
-  // Escape key to finish track creation / extension / editing, Ctrl/Cmd+Z to Undo
+  // Escape key to finish track creation / extension / editing, Ctrl/Cmd+Z to Undo, Ctrl/Cmd+P to Print
   window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      printMapWindow();
+      return;
+    }
+
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       const target = e.target;
       const isEditable =
@@ -2758,30 +2764,57 @@
   });
 
   // ==================== PRINT MAIN MAP WINDOW ====================
+  let isPrintingMap = false;
+
   function updatePrintMapMetrics() {
-    if (!el.mapEl) return;
-    const rect = el.mapEl.getBoundingClientRect();
-    if (rect.width > 100 && rect.height > 100) {
-      const mapW = Math.round(rect.width);
-      const mapH = Math.round(rect.height);
-      const scaleLandscape = Math.min(960 / mapW, 670 / mapH, 1).toFixed(4);
-      const scalePortrait = Math.min(680 / mapW, 940 / mapH, 1).toFixed(4);
+    if (!el.mapEl || isPrintingMap) return;
+    if (window.matchMedia && window.matchMedia('print').matches) return;
+
+    const mapW = el.mapEl.offsetWidth;
+    const mapH = el.mapEl.offsetHeight;
+    if (mapW > 100 && mapH > 100) {
+      const scaleLandscape = Math.min(960 / mapW, 670 / mapH, 1);
+      const scalePortrait = Math.min(680 / mapW, 940 / mapH, 1);
       const rootStyle = document.documentElement.style;
       rootStyle.setProperty('--print-map-w', `${mapW}px`);
       rootStyle.setProperty('--print-map-h', `${mapH}px`);
-      rootStyle.setProperty('--print-scale-landscape', scaleLandscape);
-      rootStyle.setProperty('--print-scale-portrait', scalePortrait);
+      rootStyle.setProperty('--print-box-w-landscape', `${Math.round(mapW * scaleLandscape)}px`);
+      rootStyle.setProperty('--print-box-h-landscape', `${Math.round(mapH * scaleLandscape)}px`);
+      rootStyle.setProperty('--print-box-w-portrait', `${Math.round(mapW * scalePortrait)}px`);
+      rootStyle.setProperty('--print-box-h-portrait', `${Math.round(mapH * scalePortrait)}px`);
+      rootStyle.setProperty('--print-scale-landscape', scaleLandscape.toFixed(4));
+      rootStyle.setProperty('--print-scale-portrait', scalePortrait.toFixed(4));
     }
   }
 
-  function printMapWindow() {
+  function handleBeforePrint() {
     updatePrintMapMetrics();
+    isPrintingMap = true;
+    if (map && map._onResize) {
+      L.DomEvent.off(window, 'resize', map._onResize, map);
+    }
+  }
+
+  function handleAfterPrint() {
+    isPrintingMap = false;
+    if (map && map._onResize) {
+      L.DomEvent.on(window, 'resize', map._onResize, map);
+    }
+    updatePrintMapMetrics();
+  }
+
+  function printMapWindow() {
+    if (el.gpxXmlPanel && !el.gpxXmlPanel.classList.contains('hidden')) {
+      toggleGpxXmlPanel(false);
+    }
+    handleBeforePrint();
     window.print();
   }
 
   updatePrintMapMetrics();
   window.addEventListener('resize', updatePrintMapMetrics);
-  window.addEventListener('beforeprint', updatePrintMapMetrics);
+  window.addEventListener('beforeprint', handleBeforePrint);
+  window.addEventListener('afterprint', handleAfterPrint);
   if (el.btnPrintMap) {
     el.btnPrintMap.addEventListener('click', printMapWindow);
   }
